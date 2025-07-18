@@ -1,0 +1,213 @@
+{
+  "name": "phprefactor",
+  "displayName": "Rector and PHPCSFixer PHP Refactoring",
+  "description": "Progressive PHP refactoring with Rector and PHPCSFixer - run on files or directories with intelligent configuration management",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Formatters"
+  ],
+  "keywords": [
+    "php",
+    "refactoring",
+    "rector",
+    "phpcsfixer",
+    "modernization"
+  ],
+  "activationEvents": [
+    "onLanguage:php"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "phprefactor.runOnFile",
+        "title": "Run phprefactor on Current File",
+        "category": "phprefactor"
+      },
+      {
+        "command": "phprefactor.runOnDirectory",
+        "title": "Run phprefactor on Directory",
+        "category": "phprefactor"
+      },
+      {
+        "command": "phprefactor.runOnWorkspace",
+        "title": "Run phprefactor on Workspace",
+        "category": "phprefactor"
+      },
+      {
+        "command": "phprefactor.dryRunOnFile",
+        "title": "Dry Run phprefactor on Current File",
+        "category": "phprefactor"
+      },
+      {
+        "command": "phprefactor.dryRunOnDirectory",
+        "title": "Dry Run phprefactor on Directory",
+        "category": "phprefactor"
+      },
+      {
+        "command": "phprefactor.generateConfig",
+        "title": "Generate phprefactor Config",
+        "category": "phprefactor"
+      },
+      {
+        "command": "phprefactor.installRector",
+        "title": "Install phprefactor Globally",
+        "category": "phprefactor"
+      },
+      {
+        "command": "phprefactor.checkInstallation",
+        "title": "Check phprefactor Installation",
+        "category": "phprefactor"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .php",
+          "command": "phprefactor.runOnFile",
+          "group": "phprefactor@1"
+        },
+        {
+          "when": "resourceExtname == .php",
+          "command": "phprefactor.dryRunOnFile",
+          "group": "phprefactor@2"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "command": "phprefactor.runOnDirectory",
+          "group": "phprefactor@3"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "command": "phprefactor.dryRunOnDirectory",
+          "group": "phprefactor@4"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceExtname == .php",
+          "command": "phprefactor.runOnFile",
+          "group": "phprefactor@1"
+        },
+        {
+          "when": "resourceExtname == .php",
+          "command": "phprefactor.dryRunOnFile",
+          "group": "phprefactor@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "phprefactor.runOnFile",
+          "when": "editorLangId == php"
+        },
+        {
+          "command": "phprefactor.dryRunOnFile",
+          "when": "editorLangId == php"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "PHPRefactor Configuration",
+      "properties": {
+        "phprefactor.phpVersion": {
+          "type": "string",
+          "default": "8.2",
+          "enum": ["7.2", "7.4", "8.0", "8.1", "8.2", "8.3"],
+          "description": "Target PHP version for refactoring"
+        },
+        "phprefactor.autoloadFile": {
+          "type": "string",
+          "default": "vendor/autoload.php",
+          "description": "Path to autoload file"
+        },
+        "phprefactor.rector.executablePath": {
+          "type": "string",
+          "default": "vendor/bin/rector",
+          "description": "Path to Rector executable. Leave empty to use global installation."
+        },
+        "phprefactor.rector.configPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to custom Rector config file. Leave empty to auto-generate from settings."
+        },
+        "phprefactor.rector.sets": {
+          "type": "array",
+          "default": ["PHP_82"],
+          "items": {
+            "type": "string",
+            "enum": [
+              "PHP_72",
+              "PHP_74",
+              "PHP_80",
+              "PHP_81",
+              "PHP_82",
+              "PHP_83",
+              "DEAD_CODE",
+              "CODE_QUALITY",
+              "CODING_STYLE",
+              "TYPE_DECLARATION",
+              "PRIVATIZATION",
+              "NAMING",
+              "EARLY_RETURN",
+              "INSTANCEOF"
+            ]
+          },
+          "description": "Rector rule sets to apply"
+        },
+        "phprefactor.rector.paths": {
+          "type": "array",
+          "default": ["src"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Default paths to scan when generating config"
+        },
+        "phprefactor.rector.skip": {
+          "type": "array",
+          "default": ["vendor", "node_modules"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Paths to skip during refactoring"
+        },
+        "phprefactor.rector.showProgressNotification": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show progress notification when running Rector"
+        },
+        "phprefactor.rector.openDiffAfterRun": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically open diff view after running Rector"
+        },
+        "phprefactor.phpcsfixer.executablePath": {
+          "type": "string",
+          "default": "vendor/bin/php-cs-fixer",
+          "description": "Path to PHPCSFixer executable. Leave empty to use global installation."
+        },
+        "phprefactor.phpcsfixer.configPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to custom PHPCSFixer config file. Leave empty to auto-generate from settings."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  }
+}
