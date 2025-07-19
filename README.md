@@ -137,8 +137,8 @@ $config = RectorConfig::configure()
     ->withPhp82Set()
 ;
 
-if (file_exists('${this.config.autoloadFile}')) {
-    $config->withAutoloadPaths(['${this.config.autoloadFile}']);
+if (file_exists('vendor/autoload.php')) {
+    $config->withAutoloadPaths(['vendor/autoload.php']);
 }
 
 return $config;
