@@ -2,7 +2,7 @@
     "name": "phprefactor",
     "displayName": "Rector and PHPCSFixer PHP Refactoring",
     "description": "Progressive PHP refactoring with Rector and PHPCSFixer - run on files or directories with intelligent configuration management",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "engines": {
         "vscode": "^1.74.0"
     },
