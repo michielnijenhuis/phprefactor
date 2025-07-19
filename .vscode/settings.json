@@ -1,0 +1,22 @@
+{
+    "typescript.preferences.includePackageJsonAutoImports": "on",
+    "typescript.suggest.autoImports": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    "files.exclude": {
+        "out": false,
+        "dist": true, // set this to false to include "dist" folder in search results
+        "node_modules": true,
+        "*.vsix": true
+    },
+    "search.exclude": {
+        "out": true,
+        "dist": true, // set this to false to include "dist" folder in search results,
+        "node_modules": true,
+        "*.vsix": true
+    },
+    // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
+    "typescript.tsc.autoDetect": "off"
+}
