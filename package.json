@@ -13,8 +13,8 @@
     "keywords": [
         "php",
         "refactoring",
-        "rector",
         "phpcsfixer",
+        "rector",
         "modernization"
     ],
     "activationEvents": [
@@ -249,7 +249,7 @@
         }
     },
     "scripts": {
-        "build": "npm run compile && vsce package",
+        "build": "npm run compile && vsce package --allow-missing-repository",
         "compile": "tsc -p ./",
         "watch": "npm-run-all -p watch:*",
         "watch:esbuild": "node esbuild.js --watch",

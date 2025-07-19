@@ -1,13 +1,13 @@
-# Rector PHP Refactoring Extension
+# PHP Refactoring Extension
 
-A VS Code extension that provides seamless integration with [Rector](https://github.com/rectorphp/rector), the powerful PHP refactoring tool. This extension enables progressive refactoring of PHP codebases by allowing you to run Rector on individual files, directories, or entire workspaces directly from VS Code.
+A VS Code extension that provides seamless integration with PHPCSFixer and [Rector](https://github.com/rectorphp/rector), the powerful PHP refactoring tool. This extension enables progressive refactoring of PHP codebases by allowing you to run PHPCSFixer Rector on individual files, directories, or entire workspaces directly from VS Code.
 
 ## Features
 
-✨ **Progressive Refactoring**: Run Rector on specific files or directories instead of the entire codebase
-🔧 **Intelligent Configuration**: Auto-generate Rector config from VS Code settings or use custom config files
-📦 **Auto-Installation**: Install Rector globally if not available
-🎯 **Context Menu Integration**: Right-click on files and folders to run Rector
+✨ **Progressive Refactoring**: Run PHPCSFixer and/or Rector on specific files or directories instead of the entire codebase
+🔧 **Intelligent Configuration**: Auto-generate config files from VS Code settings or use custom config files
+📦 **Auto-Installation**: Install PHPCSFixer and/or Rector globally if not available
+🎯 **Context Menu Integration**: Right-click on files and folders to run PHPCSFixer and/or Rector
 🔍 **Dry Run Support**: Preview changes before applying them
 📊 **Progress Tracking**: Visual progress indicators and detailed output logs
 🔄 **Git Integration**: Automatically open diff view after refactoring
@@ -16,65 +16,62 @@ A VS Code extension that provides seamless integration with [Rector](https://git
 
 1. Install the extension from the VS Code marketplace
 2. The extension will activate automatically when you open a PHP file
-3. If Rector is not installed, use the "Install Rector Globally" command
+3. If PHPCSFixer Rector is not installed, use the "Install PHPCSFixer|Rector Globally" command
 
 ## Commands
 
 All commands are available through the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
-- **Rector: Run on Current File** - Refactor the currently active PHP file
-- **Rector: Run on Directory** - Refactor all PHP files in a selected directory
-- **Rector: Run on Workspace** - Refactor the entire workspace
-- **Rector: Dry Run on Current File** - Preview changes for the current file
-- **Rector: Dry Run on Directory** - Preview changes for a directory
-- **Rector: Generate Rector Config** - Create a rector.php file from VS Code settings
-- **Rector: Install Rector Globally** - Install Rector using Composer
-- **Rector: Check Installation** - Verify Rector installation and version
+-   **phprefactor: Run on Current File** - Refactor the currently active PHP file
+-   **phprefactor: Run PHPCSFixer on Current File** - Refactor the currently active PHP file (PHPCSFixer only)
+-   **phprefactor: Run Rector on Current File** - Refactor the currently active PHP file (Rector only)
+-   **phprefactor: Run on Directory** - Refactor all PHP files in a selected directory
+-   **phprefactor: Run PHPCSFixer on Directory** - Refactor all PHP files in a selected directory (PHPCSFixer only)
+-   **phprefactor: Run Rector on Directory** - Refactor all PHP files in a selected directory (Rector only)
+-   **phprefactor: Run on Workspace** - Refactor the entire workspace
+-   **phprefactor: Dry Run on Current File** - Preview changes for the current file
+-   **phprefactor: Dry Run on Directory** - Preview changes for a directory
+-   **phprefactor: Generate PHPCSFixer Config** - Create a phpcsfixer.php file from VS Code settings
+-   **phprefactor: Generate Rector Config** - Create a rector.php file from VS Code settings
+-   **phprefactor: Install PHPCSFixer Globally** - Install PHPCSFixer using Composer
+-   **phprefactor: Install Rector Globally** - Install Rector using Composer
+-   **phprefactor: Check Installation** - Verify PHPCSFixer and Rector installation and version
 
 ## Context Menu Integration
 
 Right-click on any PHP file or folder in the Explorer to access Rector commands:
 
-- **Run Rector on Current File** (PHP files only)
-- **Dry Run Rector on Current File** (PHP files only)
-- **Run Rector on Directory** (folders only)
-- **Dry Run Rector on Directory** (folders only)
+-   **Run phprefactor on Current File** (PHP files only)
+-   **Run PHPCSFixer on Current File** (PHP files only)
+-   **Run Rector on Current File** (PHP files only)
+-   **Dry Run phprefactor on Current File** (PHP files only)
+-   **Run phprefactor on Directory** (folders only)
+-   **Run PHPCSFixer on Directory** (folders only)
+-   **Run Rector on Directory** (folders only)
+-   **Dry Run phprefactor on Directory** (folders only)
 
 ## Configuration
 
-Configure the extension through VS Code settings (`File > Preferences > Settings` and search for "rector"):
+Configure the extension through VS Code settings (`File > Preferences > Settings` and search for "phprefactor"):
 
 ### Basic Settings
 
-- **`rector.executablePath`** (string): Path to Rector executable. Leave empty to use global installation.
-- **`rector.configPath`** (string): Path to custom Rector config file. Leave empty to auto-generate from settings.
-- **`rector.phpVersion`** (string): Target PHP version for refactoring. Options: `7.4`, `8.0`, `8.1`, `8.2`, `8.3`. Default: `8.2`
-
-### Rule Sets
-
-- **`rector.sets`** (array): Rector rule sets to apply. Default: `["PHP_82"]`
-
-Available sets:
-- `PHP_74`, `PHP_80`, `PHP_81`, `PHP_82`, `PHP_83` - PHP version upgrades
-- `DEAD_CODE` - Remove dead code
-- `CODE_QUALITY` - Improve code quality
-- `CODING_STYLE` - Apply coding standards
-- `TYPE_DECLARATION` - Add type declarations
-- `PRIVATIZATION` - Make methods/properties private when possible
-- `NAMING` - Improve naming conventions
-- `EARLY_RETURN` - Use early returns
-- `INSTANCEOF` - Improve instanceof usage
+-   **`phprefactor.phpVersion`** (string): Target PHP version for refactoring. Options: `7.2`, `7.3`, `7.4`, `8.0`, `8.1`, `8.2`, `8.3`.
+-   **`phprefactor.rector.executablePath`** (string): Path to Rector executable. Leave empty to use global installation.
+-   **`phprefactor.rector.configPath`** (string): Path to custom Rector config file. Leave empty to auto-generate from settings.
+-   **`phprefactor.phpcsfixer.executablePath`** (string): Path to PHPCSFixer executable. Leave empty to use global installation.
+-   **`phprefactor.phpcsfixer.configPath`** (string): Path to custom PHPCSFixer config file. Leave empty to auto-generate from settings.
 
 ### Paths and Exclusions
 
-- **`rector.paths`** (array): Default paths to scan when generating config. Default: `["src"]`
-- **`rector.skip`** (array): Paths to skip during refactoring. Default: `["vendor", "node_modules"]`
-- **`rector.autoloadFile`** (string): Path to autoload file. Default: `"vendor/autoload.php"`
+-   **`phprefactor.paths`** (array): Default paths to scan when generating config. Default: `["__DIR____"]`
+-   **`phprefactor.skip`** (array): Paths to skip during refactoring. Default: `["vendor"]`
+-   **`phprefactor.autoloadFile`** (string): Path to autoload file. Default: `"vendor/autoload.php"`
 
 ### UI Settings
 
-- **`rector.showProgressNotification`** (boolean): Show progress notification when running Rector. Default: `true`
-- **`rector.openDiffAfterRun`** (boolean): Automatically open diff view after running Rector. Default: `true`
+-   **`phprefactor.showProgressNotification`** (boolean): Show progress notification when running phprefactor. Default: `true`
+-   **`phprefactor.openDiffAfterRun`** (boolean): Automatically open diff view after running phprefactor. Default: `true`
 
 ## Configuration Examples
 
@@ -82,10 +79,9 @@ Available sets:
 
 ```json
 {
-  "rector.phpVersion": "8.2",
-  "rector.sets": ["PHP_82", "CODE_QUALITY", "DEAD_CODE"],
-  "rector.paths": ["src", "app"],
-  "rector.skip": ["vendor", "tests/fixtures"]
+    "phprefactor.phpVersion": "8.2",
+    "phprefactor.paths": ["src", "app"],
+    "phprefactor.skip": ["vendor", "tests/fixtures"]
 }
 ```
 
@@ -93,18 +89,9 @@ Available sets:
 
 ```json
 {
-  "rector.phpVersion": "8.3",
-  "rector.sets": [
-    "PHP_83",
-    "CODE_QUALITY",
-    "CODING_STYLE",
-    "TYPE_DECLARATION",
-    "PRIVATIZATION",
-    "EARLY_RETURN",
-    "DEAD_CODE"
-  ],
-  "rector.paths": ["src", "app", "lib"],
-  "rector.skip": ["vendor", "node_modules", "storage", "bootstrap/cache"]
+    "phprefactor.phpVersion": "8.3",
+    "phprefactor.paths": ["src", "app", "lib"],
+    "phprefactor.skip": ["vendor", "node_modules", "storage", "bootstrap/cache"]
 }
 ```
 
@@ -112,48 +99,49 @@ Available sets:
 
 ```json
 {
-  "rector.executablePath": "/usr/local/bin/rector",
-  "rector.configPath": "./custom-rector.php",
-  "rector.showProgressNotification": false,
-  "rector.openDiffAfterRun": false
+    "phprefactor.rector.executablePath": "/usr/local/bin/rector",
+    "phprefactor.rector.configPath": "./custom-rector.php",
+    "phprefactor.phpcsfixer.configPath": "./custom-phpcsfixer.php",
+    "phprefactor.showProgressNotification": false,
+    "phprefactor.openDiffAfterRun": false
 }
 ```
 
 ## Generated Configuration
 
-When you don't specify a custom config path, the extension will generate a `rector.php` file in your workspace root based on your VS Code settings. Here's an example of what gets generated:
+When you don't specify a custom config path, the extension will generate a `rector.php` and `phpcsfixer.php` file in your workspace root based on your VS Code settings. Here's an example of what gets generated:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-use Rector\Config\RectorConfig;
-use Rector\Set\ValueObject\SetList;
+use Rector\\Config\\RectorConfig;
 
-return static function (RectorConfig $rectorConfig): void {
-    $rectorConfig->paths([
+$config = RectorConfig::configure()
+    ->withPaths([
         'src',
-        'app'
-    ]);
-
-    $rectorConfig->skip([
+        'app',
+    ])
+    ->withSkip([
         'vendor',
-        'node_modules'
-    ]);
-
-    $rectorConfig->sets([
-        SetList::PHP_82,
+    ])
+    ->withSets([
+        SetList::DEAD_CODE,
         SetList::CODE_QUALITY,
-        SetList::DEAD_CODE
-    ]);
+        SetList::TYPE_DECLARATION,
+        SetList::PRIVATIZATION,
+        SetList::EARLY_RETURN,
+        SetList::STRICT_BOOLEANS,
+    ])
+    ->withPhp82Set()
+;
 
-    $rectorConfig->phpVersion(82);
+if (file_exists('${this.config.autoloadFile}')) {
+    $config->withAutoloadPaths(['${this.config.autoloadFile}']);
+}
 
-    if (file_exists('vendor/autoload.php')) {
-        $rectorConfig->autoloadPaths(['vendor/autoload.php']);
-    }
-};
+return $config;
 ```
 
 ## Workflow Examples
@@ -161,62 +149,66 @@ return static function (RectorConfig $rectorConfig): void {
 ### Progressive File Refactoring
 
 1. Open a PHP file you want to refactor
-2. Right-click in the editor and select "Dry Run Rector on Current File"
+2. Right-click in the editor and select "Dry Run on Current File"
 3. Review the proposed changes in the output panel
-4. If satisfied, run "Run Rector on Current File"
+4. If satisfied, run "Run on Current File"
 5. Review the changes in the automatic diff view
 
 ### Directory-based Refactoring
 
 1. Right-click on a directory in the Explorer
-2. Select "Dry Run Rector on Directory" to preview changes
-3. Review the output and run "Run Rector on Directory" to apply changes
+2. Select "Dry Run on Directory" to preview changes
+3. Review the output and run "Run on Directory" to apply changes
 4. Use Git to review and commit the changes
-
-### Workspace-wide Refactoring
-
-1. Use Command Palette: "Rector: Run on Workspace"
-2. Monitor progress in the notification
-3. Review changes across all files using Git diff
 
 ## Troubleshooting
 
 ### Common Issues
 
 **Rector not found**
-- Ensure Rector is installed globally: `composer global require rector/rector`
-- Or specify the path in `rector.executablePath` setting
-- Use the "Install Rector Globally" command from the Command Palette
+
+-   Ensure Rector is installed globally: `composer global require rector/rector`
+-   Or specify the path in `phprefactor.rector.executablePath` setting
+-   Use the "Install Rector Globally" command from the Command Palette
+
+**PHPCSFixer not found**
+
+-   Ensure PHPCSFixer is installed globally: `composer global require friendsofphp/php-cs-fixer`
+-   Or specify the path in `phprefactor.phpcsfixer.executablePath` setting
+-   Use the "Install PHPCSFixer Globally" command from the Command Palette
 
 **Config file not found**
-- The extension will auto-generate a config file from your settings
-- Use "Generate Rector Config" command to create one manually
-- Specify a custom config path in `rector.configPath` setting
+
+-   The extension will auto-generate a config file from your settings
+-   Use "Generate Rector Config" and/or "Generate PHPCSFixer Config" command to create one manually
+-   Specify a custom config path in `phprefactor.rector.configPath` and/or `phprefactor.phpcsfixer.configPath` setting
 
 **Permission errors**
-- Ensure VS Code has write permissions to your workspace
-- Check that the PHP files are not read-only
-- Verify Rector has permissions to modify files
+
+-   Ensure VS Code has write permissions to your workspace
+-   Check that the PHP files are not read-only
+-   Verify PHPCSFixer and Rector have permissions to modify files
 
 **Autoload issues**
-- Ensure `vendor/autoload.php` exists and is correct
-- Update `rector.autoloadFile` setting if using a different autoload file
-- Run `composer install` to generate autoload files
+
+-   Ensure `vendor/autoload.php` exists and is correct
+-   Update `phprefactor.autoloadFile` setting if using a different autoload file
+-   Run `composer install` to generate autoload files
 
 ### Performance Tips
 
-- Use directory-specific refactoring instead of workspace-wide for large projects
-- Exclude unnecessary directories like `vendor`, `node_modules`, and `storage`
-- Use dry run first to preview changes before applying them
-- Consider running Rector on smaller batches of files for better control
+-   Use directory-specific refactoring instead of workspace-wide for large projects
+-   Exclude unnecessary directories like `vendor`, `node_modules`, and `storage`
+-   Use dry run first to preview changes before applying them
+-   Consider running phprefactor on smaller batches of files for better control
 
 ### Debug Mode
 
 To debug issues:
 
 1. Open the Output panel (`View > Output`)
-2. Select "Rector" from the dropdown
-3. Run a Rector command to see detailed logs
+2. Select "phprefactor" from the dropdown
+3. Run a phprefactor command to see detailed logs
 4. Check for error messages and command output
 
 ## Integration with Other Tools
@@ -224,22 +216,25 @@ To debug issues:
 ### Git Integration
 
 The extension integrates with Git by:
-- Automatically opening diff view after refactoring (if enabled)
-- Preserving file history through Git tracking
-- Allowing easy rollback of changes
+
+-   Automatically opening diff view after refactoring (if enabled)
+-   Preserving file history through Git tracking
+-   Allowing easy rollback of changes
 
 ### Composer Integration
 
 Works seamlessly with Composer projects:
-- Automatically detects `vendor/autoload.php`
-- Respects Composer's PSR-4 autoloading
-- Can install Rector via Composer global
+
+-   Automatically detects `vendor/autoload.php`
+-   Respects Composer's PSR-4 autoloading
+-   Can install PHPCSFixer and Rector via Composer global
 
 ### PHP Development Workflow
 
 Fits into your PHP development workflow:
+
 1. Write code normally
-2. Use Rector to modernize and improve code quality
+2. Use phprefactor to modernize and improve code quality
 3. Run tests to ensure functionality
 4. Commit refactored code
 5. Deploy with confidence
@@ -268,13 +263,13 @@ You can maintain multiple Rector configurations for different purposes:
 
 ```json
 {
-  "rector.configPath": "./rector-upgrade.php" // For PHP version upgrades
+    "rector.configPath": "./rector-upgrade.php" // For PHP version upgrades
 }
 ```
 
 ```json
 {
-  "rector.configPath": "./rector-quality.php" // For code quality improvements
+    "rector.configPath": "./rector-quality.php" // For code quality improvements
 }
 ```
 
@@ -300,8 +295,8 @@ This extension is open source. Contributions are welcome!
 
 ### Building
 
-- `npm run compile` - Compile TypeScript
-- `npm run watch` - Watch for changes and compile automatically
+-   `npm run compile` - Compile TypeScript
+-   `npm run watch` - Watch for changes and compile automatically
 
 ## License
 
@@ -310,13 +305,23 @@ This extension is licensed under the MIT License.
 ## Changelog
 
 ### 1.0.0
-- Initial release
-- File and directory refactoring
-- Auto-configuration generation
-- Dry run support
-- Context menu integration
-- Progress notifications
-- Git integration
+
+-   Initial release
+-   File and directory refactoring
+-   Auto-configuration generation
+-   Dry run support
+-   Context menu integration
+-   Progress notifications
+-   Git integration
+
+### 1.1.0
+
+-   No longer open output panel on run
+
+### 1.2.0
+
+-   Add PHPCSFixer and Rector-only commands
+-   Improve generated config files
 
 ## Support
 
@@ -331,10 +336,10 @@ If you encounter issues or have suggestions:
 
 Consider these complementary extensions for PHP development:
 
-- **PHP Intelephense** - PHP language server
-- **PHP Debug** - Debug PHP applications
-- **PHP DocBlocker** - Generate DocBlocks
-- **GitLens** - Enhanced Git capabilities
+-   **PHP Intelephense** - PHP language server
+-   **PHP Debug** - Debug PHP applications
+-   **PHP DocBlocker** - Generate DocBlocks
+-   **GitLens** - Enhanced Git capabilities
 
 ---
 
