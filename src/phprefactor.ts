@@ -23,6 +23,7 @@ interface PHPRefactorConfig {
     autoloadFile: string
     paths: string[]
     skip: string[]
+    quiet: boolean
     showProgressNotification: boolean
     openDiffAfterRun: boolean
     rector: RectorConfig
@@ -53,6 +54,10 @@ export class PHPRefactorManager {
         // regen config files?
     }
 
+    public get isQuiet() {
+        return this.config.quiet
+    }
+
     private get rootPath() {
         return vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? '.'
     }
@@ -72,6 +77,7 @@ export class PHPRefactorManager {
             },
             paths: config.get('rector.paths', ['__DIR__']),
             skip: config.get('rector.skip', ['vendor']),
+            quiet: config.get('rector.quiet', false),
             phpVersion: phpVersion,
             autoloadFile: config.get('autoloadFile', 'vendor/autoload.php'),
             showProgressNotification: config.get('showProgressNotification', true),
@@ -152,7 +158,7 @@ use Rector\\Set\\ValueObject\\SetList;
 
 $config = RectorConfig::configure()
     ->withPaths([
-        ${this.config.paths.map((path) => `'${path}'`).join(',\n        ')}
+        ${this.config.paths.map((path) => (path === '__DIR__' ? '__DIR__' : `'${path}'`)).join(',\n        ')}
     ])
     ->withSkip([
         ${this.config.skip.map((path) => `'${path}'`).join(',\n        ')}
@@ -206,10 +212,8 @@ $finder = (new PhpCsFixer\\Finder())
 return (new PhpCsFixer\\Config())
     ->setRules([
         '@PSR12' => true,
-        '@PHP73Migration' => true, // PHP 7.2-compatible in practice
-        '@PhpCsFixer' => true, // Additional sensible defaults
-
-        // Your specific preferences:
+        '@PHP73Migration' => true, 
+        '@PhpCsFixer' => true, 
         'array_syntax' => ['syntax' => 'short'],
         'binary_operator_spaces' => ['default' => 'single_space'],
         'cast_spaces' => ['space' => 'single'],
@@ -224,11 +228,7 @@ return (new PhpCsFixer\\Config())
         'ternary_operator_spaces' => true,
         'trailing_comma_in_multiline' => ['elements' => ['arrays']],
         'whitespace_after_comma_in_array' => true,
-
-        // Prefer alternative syntax for control structures (if: endif;)
-        'alternative_syntax' => true,
-        
-        // Optional good practices
+        'no_alternative_syntax' => false,
         'blank_line_before_statement' => [
             'statements' => ['return', 'throw', 'try', 'foreach', 'for', 'while', 'if']
         ],
@@ -238,12 +238,12 @@ return (new PhpCsFixer\\Config())
         'phpdoc_separation' => true,
         'phpdoc_trim' => true,
         'phpdoc_trim_consecutive_blank_line_separation' => true,
-        'simplified_null_return' => false, // Avoid issues on older PHP
+        'simplified_null_return' => false,
         'yoda_style' => false,
     ])
     ->setIndent('    ')
     ->setRiskyAllowed(true)
-    ->setLineEnding("\n")
+    ->setLineEnding("\\n")
     ->setFinder($finder)
 ;
 `
@@ -292,7 +292,7 @@ return (new PhpCsFixer\\Config())
         return await this.generatePhpCsFixerConfigFile()
     }
 
-    private async runRectorCommand(target: string, dryRun: boolean = false): Promise<void> {
+    private async runRectorCommand(target: string, dryRun: boolean = false): Promise<boolean> {
         try {
             const executable = await this.getRectorExecutable()
             const configPath = await this.getRectorConfigPath()
@@ -304,7 +304,6 @@ return (new PhpCsFixer\\Config())
             }
 
             this.outputChannel.clear()
-            // this.outputChannel.show()
             this.outputChannel.appendLine(`Running Rector on: ${target}`)
             this.outputChannel.appendLine(`Config: ${configPath}`)
             this.outputChannel.appendLine(`Command: ${executable} ${args.join(' ')}`)
@@ -317,8 +316,8 @@ return (new PhpCsFixer\\Config())
             }
 
             if (this.config.showProgressNotification) {
-                await vscode.window.withProgress(progressOptions, async (progress, token) => {
-                    return new Promise<void>((resolve, reject) => {
+                return await vscode.window.withProgress(progressOptions, async (progress, token) => {
+                    return new Promise<boolean>((resolve, reject) => {
                         const process = spawn(executable, args, {
                             cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
                         })
@@ -346,11 +345,9 @@ return (new PhpCsFixer\\Config())
                                     vscode.commands.executeCommand('git.openChange')
                                 }
 
-                                vscode.window.showInformationMessage('Rector completed successfully!')
-                                resolve()
+                                resolve(true)
                             } else {
                                 this.outputChannel.appendLine(`\n❌ Rector failed with exit code: ${code}`)
-                                vscode.window.showErrorMessage(`Rector failed with exit code: ${code}`)
                                 reject(new Error(`Rector failed with exit code: ${code}`))
                             }
                         })
@@ -367,7 +364,7 @@ return (new PhpCsFixer\\Config())
                     })
                 })
             } else {
-                await new Promise<void>((resolve, reject) => {
+                return await new Promise<boolean>((resolve, reject) => {
                     const process = spawn(executable, args, {
                         cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
                     })
@@ -383,7 +380,7 @@ return (new PhpCsFixer\\Config())
                     process.on('close', (code) => {
                         if (code === 0) {
                             this.outputChannel.appendLine('\n✅ Rector completed successfully!')
-                            resolve()
+                            resolve(true)
                         } else {
                             this.outputChannel.appendLine(`\n❌ Rector failed with exit code: ${code}`)
                             reject(new Error(`Rector failed with exit code: ${code}`))
@@ -398,12 +395,11 @@ return (new PhpCsFixer\\Config())
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
             this.outputChannel.appendLine(`\n❌ Error: ${message}`)
-            vscode.window.showErrorMessage(`Rector error: ${message}`)
             throw error
         }
     }
 
-    private async runPhpCsFixerCommand(target: string, dryRun: boolean = false): Promise<void> {
+    private async runPhpCsFixerCommand(target: string, dryRun: boolean = false): Promise<boolean> {
         try {
             const executable = await this.getPhpCsFixerExecutable()
             const configPath = await this.getPhpCsFixer()
@@ -422,7 +418,6 @@ return (new PhpCsFixer\\Config())
             }
 
             this.outputChannel.clear()
-            // this.outputChannel.show()
             this.outputChannel.appendLine(`Running PHPCSFixer on: ${target}`)
             this.outputChannel.appendLine(`Config: ${configPath}`)
             this.outputChannel.appendLine(`Command: ${executable} ${args.join(' ')}`)
@@ -435,8 +430,8 @@ return (new PhpCsFixer\\Config())
             }
 
             if (this.config.showProgressNotification) {
-                await vscode.window.withProgress(progressOptions, async (progress, token) => {
-                    return new Promise<void>((resolve, reject) => {
+                return await vscode.window.withProgress(progressOptions, async (progress, token) => {
+                    return new Promise<boolean>((resolve, reject) => {
                         const process = spawn(executable, args, {
                             cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
                         })
@@ -464,11 +459,9 @@ return (new PhpCsFixer\\Config())
                                     vscode.commands.executeCommand('git.openChange')
                                 }
 
-                                vscode.window.showInformationMessage('PHPCSFixer completed successfully!')
-                                resolve()
+                                resolve(true)
                             } else {
                                 this.outputChannel.appendLine(`\n❌ PHPCSFixer failed with exit code: ${code}`)
-                                vscode.window.showErrorMessage(`PHPCSFixer failed with exit code: ${code}`)
                                 reject(new Error(`PHPCSFixer failed with exit code: ${code}`))
                             }
                         })
@@ -485,7 +478,7 @@ return (new PhpCsFixer\\Config())
                     })
                 })
             } else {
-                await new Promise<void>((resolve, reject) => {
+                return await new Promise<boolean>((resolve, reject) => {
                     const process = spawn(executable, args, {
                         cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
                     })
@@ -501,7 +494,7 @@ return (new PhpCsFixer\\Config())
                     process.on('close', (code) => {
                         if (code === 0) {
                             this.outputChannel.appendLine('\n✅ PHPCSFixer completed successfully!')
-                            resolve()
+                            resolve(true)
                         } else {
                             this.outputChannel.appendLine(`\n❌ PHPCSFixer failed with exit code: ${code}`)
                             reject(new Error(`PHPCSFixer failed with exit code: ${code}`))
@@ -516,25 +509,24 @@ return (new PhpCsFixer\\Config())
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
             this.outputChannel.appendLine(`\n❌ Error: ${message}`)
-            vscode.window.showErrorMessage(`PHPCSFixer error: ${message}`)
             throw error
         }
     }
 
-    async runRectorOnFile(filePath: string, dryRun: boolean = false): Promise<void> {
-        await this.runRectorCommand(filePath, dryRun)
+    async runRectorOnFile(filePath: string, dryRun: boolean = false): Promise<boolean> {
+        return await this.runRectorCommand(filePath, dryRun)
     }
 
-    async runPHPCSFixerOnFile(filePath: string, dryRun: boolean = false): Promise<void> {
-        await this.runPhpCsFixerCommand(filePath, dryRun)
+    async runPHPCSFixerOnFile(filePath: string, dryRun: boolean = false): Promise<boolean> {
+        return await this.runPhpCsFixerCommand(filePath, dryRun)
     }
 
-    async runRectorOnDirectory(directoryPath: string, dryRun: boolean = false): Promise<void> {
-        await this.runRectorCommand(directoryPath, dryRun)
+    async runRectorOnDirectory(directoryPath: string, dryRun: boolean = false): Promise<boolean> {
+        return await this.runRectorCommand(directoryPath, dryRun)
     }
 
-    async runPHPCSFixerOnDirectory(directoryPath: string, dryRun: boolean = false): Promise<void> {
-        await this.runPhpCsFixerCommand(directoryPath, dryRun)
+    async runPHPCSFixerOnDirectory(directoryPath: string, dryRun: boolean = false): Promise<boolean> {
+        return await this.runPhpCsFixerCommand(directoryPath, dryRun)
     }
 
     async checkRectorInstallation(): Promise<boolean> {
@@ -543,18 +535,15 @@ return (new PhpCsFixer\\Config())
             const { stdout } = await execAsync(`${executable} --version`)
 
             this.outputChannel.clear()
-            // this.outputChannel.show()
             this.outputChannel.appendLine('Rector Installation Check')
             this.outputChannel.appendLine('========================')
             this.outputChannel.appendLine(`Executable: ${executable}`)
             this.outputChannel.appendLine(`Version: ${stdout.trim()}`)
 
-            vscode.window.showInformationMessage(`Rector is installed: ${stdout.trim()}`)
             return true
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
             this.outputChannel.appendLine(`❌ ${message}`)
-            vscode.window.showErrorMessage(message)
             return false
         }
     }
@@ -565,26 +554,22 @@ return (new PhpCsFixer\\Config())
             const { stdout } = await execAsync(`${executable} --version`)
 
             this.outputChannel.clear()
-            // this.outputChannel.show()
             this.outputChannel.appendLine('PHPCSFixer Installation Check')
             this.outputChannel.appendLine('========================')
             this.outputChannel.appendLine(`Executable: ${executable}`)
             this.outputChannel.appendLine(`Version: ${stdout.trim()}`)
 
-            vscode.window.showInformationMessage(`PHPCSFixer is installed: ${stdout.trim()}`)
             return true
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
             this.outputChannel.appendLine(`❌ ${message}`)
-            vscode.window.showErrorMessage(message)
             return false
         }
     }
 
-    async installRector(): Promise<void> {
+    async installRector(): Promise<boolean> {
         try {
             this.outputChannel.clear()
-            // this.outputChannel.show()
             this.outputChannel.appendLine('Installing Rector globally...')
 
             await vscode.window.withProgress(
@@ -604,18 +589,17 @@ return (new PhpCsFixer\\Config())
             )
 
             this.outputChannel.appendLine('✅ Rector installed successfully!')
-            vscode.window.showInformationMessage('Rector installed successfully!')
+            return true
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
             this.outputChannel.appendLine(`❌ Installation failed: ${message}`)
-            vscode.window.showErrorMessage(`Rector installation failed: ${message}`)
+            return false
         }
     }
 
-    async installPhpCsFixer(): Promise<void> {
+    async installPhpCsFixer(): Promise<boolean> {
         try {
             this.outputChannel.clear()
-            // this.outputChannel.show()
             this.outputChannel.appendLine('Installing PHPCSFixer globally...')
 
             await vscode.window.withProgress(
@@ -635,15 +619,15 @@ return (new PhpCsFixer\\Config())
             )
 
             this.outputChannel.appendLine('✅ PHPCSFixer installed successfully!')
-            vscode.window.showInformationMessage('PHPCSFixer installed successfully!')
+            return true
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
             this.outputChannel.appendLine(`❌ Installation failed: ${message}`)
-            vscode.window.showErrorMessage(`PHPCSFixer installation failed: ${message}`)
+            return false
         }
     }
 
-    async generateRectorConfigFromSettings(): Promise<void> {
+    async generateRectorConfigFromSettings(): Promise<boolean> {
         try {
             const configPath = await this.generateRectorConfigFile()
             this.outputChannel.clear()
@@ -653,14 +637,14 @@ return (new PhpCsFixer\\Config())
             const doc = await vscode.workspace.openTextDocument(configPath)
             await vscode.window.showTextDocument(doc)
 
-            vscode.window.showInformationMessage('Rector config generated successfully!')
+            return true
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
-            vscode.window.showErrorMessage(`Failed to generate config: ${message}`)
+            return false
         }
     }
 
-    async generatePhpCsFixerConfigFromSettings(): Promise<void> {
+    async generatePhpCsFixerConfigFromSettings(): Promise<boolean> {
         try {
             const configPath = await this.generatePhpCsFixerConfigFile()
             this.outputChannel.clear()
@@ -670,10 +654,10 @@ return (new PhpCsFixer\\Config())
             const doc = await vscode.workspace.openTextDocument(configPath)
             await vscode.window.showTextDocument(doc)
 
-            vscode.window.showInformationMessage('PHPCSFixer config generated successfully!')
+            return true
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
-            vscode.window.showErrorMessage(`Failed to generate config: ${message}`)
+            return false
         }
     }
 

@@ -4,6 +4,15 @@ import { PHPRefactorManager } from '../phprefactor'
 async function doRunOnFile(uri?: vscode.Uri, dryRun = false, only?: 'phpcsfixer' | 'rector') {
     const manager = PHPRefactorManager.getInstance()
 
+    let name: string
+    if (only === 'phpcsfixer') {
+        name = 'PHPCSFixer'
+    } else if (only === 'rector') {
+        name = 'Rector'
+    } else {
+        name = 'Rector and PHPCSFixer'
+    }
+
     try {
         const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName
         if (!filePath) {
@@ -11,7 +20,7 @@ async function doRunOnFile(uri?: vscode.Uri, dryRun = false, only?: 'phpcsfixer'
             return
         }
 
-        const promises: any[] = []
+        const promises: Promise<boolean>[] = []
         if (!only || only === 'phpcsfixer') {
             promises.push(manager.runPHPCSFixerOnFile(filePath, dryRun))
         }
@@ -19,9 +28,24 @@ async function doRunOnFile(uri?: vscode.Uri, dryRun = false, only?: 'phpcsfixer'
             promises.push(manager.runRectorOnFile(filePath, dryRun))
         }
 
-        await Promise.allSettled(promises)
+        const results = await Promise.allSettled(promises)
+
+        if (!manager.isQuiet) {
+            const success = results.every((result) => result.status === 'fulfilled' && result.value)
+
+            if (success) {
+                vscode.window.showInformationMessage(`${name} completed successfully.`)
+            } else {
+                const messages = results
+                    .map((res) => (res.status === 'rejected' ? res.reason.message : ''))
+                    .filter(Boolean)
+                vscode.window.showErrorMessage(`${name} failed with errors:\n${messages.join(',\n')}`)
+            }
+        }
     } catch (error) {
-        // Error handling is done in the manager
+        vscode.window.showErrorMessage(
+            `Error running ${name}: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`,
+        )
     }
 }
 
