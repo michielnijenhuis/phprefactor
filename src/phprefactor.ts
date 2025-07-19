@@ -75,7 +75,7 @@ export class PHPRefactorManager {
             phpVersion: phpVersion,
             autoloadFile: config.get('autoloadFile', 'vendor/autoload.php'),
             showProgressNotification: config.get('showProgressNotification', true),
-            openDiffAfterRun: config.get('rector.openDiffAfterRun', true),
+            openDiffAfterRun: config.get('rector.openDiffAfterRun', false),
         }
     }
 

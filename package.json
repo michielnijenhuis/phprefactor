@@ -222,7 +222,7 @@
                 },
                 "phprefactor.openDiffAfterRun": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Automatically open diff view after running PHPCSFixer and Rector"
                 },
                 "phprefactor.rector.executablePath": {
