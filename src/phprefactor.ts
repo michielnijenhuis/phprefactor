@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 
 const execAsync = promisify(exec)
 
-// type PHPVersion = '7.2' | '7.4' | '8.0' | '8.1' | '8.2' | '8.3'
+type PHPVersion = '7.2' | '7.3' | '7.4' | '8.0' | '8.1' | '8.2' | '8.3'
 
 interface RectorConfig {
     executablePath: string
@@ -19,14 +19,14 @@ interface PHPCSFixerConfig {
 }
 
 interface PHPRefactorConfig {
+    phpVersion?: PHPVersion
+    autoloadFile: string
     paths: string[]
     skip: string[]
-    // phpVersion?: PHPVersion
-    autoloadFile: string
-    rector: RectorConfig
-    phpcsfixer: PHPCSFixerConfig
     showProgressNotification: boolean
     openDiffAfterRun: boolean
+    rector: RectorConfig
+    phpcsfixer: PHPCSFixerConfig
 }
 
 export class PHPRefactorManager {
@@ -59,20 +59,20 @@ export class PHPRefactorManager {
 
     private loadConfig(): PHPRefactorConfig {
         const config = vscode.workspace.getConfiguration('phprefactor')
-        // const phpVersion = config.get<PHPVersion>('phpVersion')
+        const phpVersion = config.get<PHPVersion>('phpVersion')
 
         return {
             rector: {
-                executablePath: config.get('rector.executablePath', ''),
+                executablePath: config.get('rector.executablePath', 'vendor/bin/rector'),
                 configPath: config.get('rector.configPath', ''),
             },
             phpcsfixer: {
-                executablePath: config.get('phpcsfixer.executablePath', ''),
+                executablePath: config.get('phpcsfixer.executablePath', 'vendor/bin/php-cs-fixer'),
                 configPath: config.get('phpcsfixer.configPath', ''),
             },
-            paths: config.get('rector.paths', ['src']),
-            skip: config.get('rector.skip', ['vendor', 'node_modules']),
-            // phpVersion: phpVersion,
+            paths: config.get('rector.paths', ['__DIR__']),
+            skip: config.get('rector.skip', ['vendor']),
+            phpVersion: phpVersion,
             autoloadFile: config.get('autoloadFile', 'vendor/autoload.php'),
             showProgressNotification: config.get('showProgressNotification', true),
             openDiffAfterRun: config.get('rector.openDiffAfterRun', true),
@@ -141,6 +141,8 @@ export class PHPRefactorManager {
             return configPath
         }
 
+        const phpSet = this.config.phpVersion ? `->withPhp${this.config.phpVersion.replace('.', '')}Set()\n` : ''
+
         const configContent = `<?php
 
 declare(strict_types=1);
@@ -154,18 +156,19 @@ $config = RectorConfig::configure()
     ->withSkip([
         ${this.config.skip.map((path) => `'${path}'`).join(',\n        ')}
     ])
-    ->withPreparedSets(
-        deadCode: true,
-        codeQuality: true,
-        typeDeclarations: true,
-        privatization: true,
-        earlyReturn: true,
-        strictBooleans: true,
-    )
-    ->withPhpSets();
+    ->withSets([
+        SetList::DEAD_CODE,
+        SetList::CODE_QUALITY,
+        SetList::TYPE_DECLARATION,
+        SetList::PRIVATIZATION,
+        SetList::EARLY_RETURN,
+        SetList::STRICT_BOOLEANS,
+    ])
+    ${phpSet}
+;
 
-if (file_exists('vendor/autoload.php')) {
-    $config->withAutoloadPaths(['vendor/autoload.php']);
+if (file_exists('${this.config.autoloadFile}')) {
+    $config->withAutoloadPaths(['${this.config.autoloadFile}']);
 }
 
 return $config;
@@ -201,16 +204,45 @@ $finder = (new PhpCsFixer\\Finder())
         
 return (new PhpCsFixer\\Config())
     ->setRules([
-        '@PhpCsFixer' => true,
         '@PSR12' => true,
-        '@Symfony' => true,
+        '@PHP73Migration' => true, // PHP 7.2-compatible in practice
+        '@PhpCsFixer' => true, // Additional sensible defaults
+
+        // Your specific preferences:
         'array_syntax' => ['syntax' => 'short'],
+        'binary_operator_spaces' => ['default' => 'single_space'],
+        'cast_spaces' => ['space' => 'single'],
+        'control_structure_braces' => false,
+        'control_structure_continuation_position' => ['position' => 'next_line'],
+        'echo_tag_syntax' => ['format' => 'short'],
+        'heredoc_to_nowdoc' => true,
+        'no_multiline_whitespace_around_double_arrow' => true,
+        'no_trailing_whitespace' => true,
         'no_unused_imports' => true,
-        'ordered_imports' => true,
         'single_quote' => true,
+        'ternary_operator_spaces' => true,
+        'trailing_comma_in_multiline' => ['elements' => ['arrays']],
+        'whitespace_after_comma_in_array' => true,
+
+        // Prefer alternative syntax for control structures (if: endif;)
+        'alternative_syntax' => true,
+        
+        // Optional good practices
+        'blank_line_before_statement' => [
+            'statements' => ['return', 'throw', 'try', 'foreach', 'for', 'while', 'if']
+        ],
+        'method_argument_space' => ['on_multiline' => 'ensure_fully_multiline'],
+        'phpdoc_align' => ['align' => 'left'],
+        'phpdoc_scalar' => true,
+        'phpdoc_separation' => true,
+        'phpdoc_trim' => true,
+        'phpdoc_trim_consecutive_blank_line_separation' => true,
+        'simplified_null_return' => false, // Avoid issues on older PHP
         'yoda_style' => false,
     ])
     ->setIndent('    ')
+    ->setRiskyAllowed(true)
+    ->setLineEnding("\n")
     ->setFinder($finder)
 ;
 `
