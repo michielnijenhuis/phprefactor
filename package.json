@@ -2,7 +2,7 @@
   "name": "phprefactor",
   "displayName": "Rector and PHPCSFixer PHP Refactoring",
   "description": "Progressive PHP refactoring with Rector and PHPCSFixer - run on files or directories with intelligent configuration management",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -34,11 +34,6 @@
         "category": "phprefactor"
       },
       {
-        "command": "phprefactor.runOnWorkspace",
-        "title": "Run phprefactor on Workspace",
-        "category": "phprefactor"
-      },
-      {
         "command": "phprefactor.dryRunOnFile",
         "title": "Dry Run phprefactor on Current File",
         "category": "phprefactor"
@@ -49,18 +44,28 @@
         "category": "phprefactor"
       },
       {
-        "command": "phprefactor.generateConfig",
-        "title": "Generate phprefactor Config",
+        "command": "phprefactor.generateRectorConfig",
+        "title": "Generate Rector Config",
+        "category": "phprefactor"
+      },
+      {
+        "command": "phprefactor.generatePhpCsFixerConfig",
+        "title": "Generate PHPCSFixer Config",
         "category": "phprefactor"
       },
       {
         "command": "phprefactor.installRector",
-        "title": "Install phprefactor Globally",
+        "title": "Install Rector Globally",
+        "category": "phprefactor"
+      },
+      {
+        "command": "phprefactor.installPhpCsFixer",
+        "title": "Install PhpCsFixer Globally",
         "category": "phprefactor"
       },
       {
         "command": "phprefactor.checkInstallation",
-        "title": "Check phprefactor Installation",
+        "title": "Check Rector and PHPCsFixer Installation",
         "category": "phprefactor"
       }
     ],
@@ -117,7 +122,14 @@
         "phprefactor.phpVersion": {
           "type": "string",
           "default": "8.2",
-          "enum": ["7.2", "7.4", "8.0", "8.1", "8.2", "8.3"],
+          "enum": [
+            "7.2",
+            "7.4",
+            "8.0",
+            "8.1",
+            "8.2",
+            "8.3"
+          ],
           "description": "Target PHP version for refactoring"
         },
         "phprefactor.autoloadFile": {
@@ -137,7 +149,9 @@
         },
         "phprefactor.rector.sets": {
           "type": "array",
-          "default": ["PHP_82"],
+          "default": [
+            "PHP_82"
+          ],
           "items": {
             "type": "string",
             "enum": [
@@ -161,7 +175,9 @@
         },
         "phprefactor.rector.paths": {
           "type": "array",
-          "default": ["src"],
+          "default": [
+            "src"
+          ],
           "items": {
             "type": "string"
           },
@@ -169,7 +185,10 @@
         },
         "phprefactor.rector.skip": {
           "type": "array",
-          "default": ["vendor", "node_modules"],
+          "default": [
+            "vendor",
+            "node_modules"
+          ],
           "items": {
             "type": "string"
           },
@@ -199,15 +218,15 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "build": "npm run compile && vsce package",
     "compile": "tsc -p ./",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json"
   },
   "devDependencies": {
-    "@types/vscode": "^1.74.0",
     "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
     "typescript": "^4.9.4"
   }
 }
