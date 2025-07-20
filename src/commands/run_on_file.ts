@@ -30,17 +30,17 @@ async function doRunOnFile(uri?: vscode.Uri, dryRun = false, only?: 'phpcsfixer'
 
         const results = await Promise.allSettled(promises)
 
-        if (!manager.isQuiet) {
-            const success = results.every((result) => result.status === 'fulfilled' && result.value)
+        if (!manager.notifyOnResult) {
+            return
+        }
 
-            if (success) {
-                vscode.window.showInformationMessage(`${name} completed successfully.`)
-            } else {
-                const messages = results
-                    .map((res) => (res.status === 'rejected' ? res.reason.message : ''))
-                    .filter(Boolean)
-                vscode.window.showErrorMessage(`${name} failed with errors:\n${messages.join(',\n')}`)
-            }
+        const success = results.every((result) => result.status === 'fulfilled' && result.value)
+
+        if (success) {
+            vscode.window.showInformationMessage(`${name} completed successfully.`)
+        } else {
+            const messages = results.map((res) => (res.status === 'rejected' ? res.reason.message : '')).filter(Boolean)
+            vscode.window.showErrorMessage(`${name} failed with errors:\n${messages.join(',\n')}`)
         }
     } catch (error) {
         vscode.window.showErrorMessage(

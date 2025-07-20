@@ -3,7 +3,7 @@
     "displayName": "Rector and PHPCSFixer PHP Refactoring",
     "publisher": "michielnijenhuis",
     "description": "Progressive PHP refactoring with Rector and PHPCSFixer - run on files or directories with intelligent configuration management",
-    "version": "1.3.2",
+    "version": "1.3.3",
     "icon": "assets/php.png",
     "repository": {
         "type": "git",
@@ -201,10 +201,10 @@
                     "default": "vendor/autoload.php",
                     "description": "Path to autoload file"
                 },
-                "phprefactor.quiet": {
+                "phprefactor.notifyOnResult": {
                     "type": "boolean",
-                    "default": false,
-                    "description": "Suppress messages"
+                    "default": true,
+                    "description": "Show notification when refactoring is complete"
                 },
                 "phprefactor.paths": {
                     "type": "array",
@@ -228,7 +228,7 @@
                 },
                 "phprefactor.showProgressNotification": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Show progress notification when running PHPCSFixer and Rector"
                 },
                 "phprefactor.openDiffAfterRun": {

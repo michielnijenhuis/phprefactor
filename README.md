@@ -70,7 +70,8 @@ Configure the extension through VS Code settings (`File > Preferences > Settings
 
 ### UI Settings
 
--   **`phprefactor.showProgressNotification`** (boolean): Show progress notification when running phprefactor. Default: `true`
+-   **`phprefactor.showProgressNotification`** (boolean): Show progress notification when running phprefactor. Default: `false`
+-   **`phprefactor.notifyOnResult`** (boolean): Show information notification after running phprefactor. Default: `true`
 -   **`phprefactor.openDiffAfterRun`** (boolean): Automatically open diff view after running phprefactor. Default: `true`
 
 ## Configuration Examples
@@ -116,7 +117,7 @@ When you don't specify a custom config path, the extension will generate a `rect
 
 declare(strict_types=1);
 
-use Rector\\Config\\RectorConfig;
+use Rector\Config\RectorConfig;
 
 $config = RectorConfig::configure()
     ->withPaths([
@@ -134,7 +135,7 @@ $config = RectorConfig::configure()
         SetList::EARLY_RETURN,
         SetList::STRICT_BOOLEANS,
     ])
-    ->withPhp82Set()
+    ->withPhp74Set()
 ;
 
 if (file_exists('vendor/autoload.php')) {
@@ -322,6 +323,11 @@ This extension is licensed under the MIT License.
 
 -   Add PHPCSFixer and Rector-only commands
 -   Improve generated config files
+
+### 1.3.0
+
+-   Default `phprefactor.showProgressNotification` setting to `false`
+-   Add `phprefactor.notifyOnResult` setting
 
 ## Support
 

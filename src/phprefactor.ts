@@ -23,7 +23,7 @@ interface PHPRefactorConfig {
     autoloadFile: string
     paths: string[]
     skip: string[]
-    quiet: boolean
+    notifyOnResult: boolean
     showProgressNotification: boolean
     openDiffAfterRun: boolean
     rector: RectorConfig
@@ -54,8 +54,8 @@ export class PHPRefactorManager {
         // regen config files?
     }
 
-    public get isQuiet() {
-        return this.config.quiet
+    public get notifyOnResult() {
+        return this.config.notifyOnResult
     }
 
     private get rootPath() {
@@ -75,13 +75,13 @@ export class PHPRefactorManager {
                 executablePath: config.get('phpcsfixer.executablePath', 'vendor/bin/php-cs-fixer'),
                 configPath: config.get('phpcsfixer.configPath', ''),
             },
-            paths: config.get('rector.paths', ['__DIR__']),
-            skip: config.get('rector.skip', ['vendor']),
-            quiet: config.get('rector.quiet', false),
+            paths: config.get('paths', ['__DIR__']),
+            skip: config.get('skip', ['vendor']),
+            notifyOnResult: config.get('notifyOnResult', true),
             phpVersion: phpVersion,
             autoloadFile: config.get('autoloadFile', 'vendor/autoload.php'),
-            showProgressNotification: config.get('showProgressNotification', true),
-            openDiffAfterRun: config.get('rector.openDiffAfterRun', false),
+            showProgressNotification: config.get('showProgressNotification', false),
+            openDiffAfterRun: config.get('openDiffAfterRun', false),
         }
     }
 
@@ -147,7 +147,15 @@ export class PHPRefactorManager {
             return configPath
         }
 
-        const phpSet = this.config.phpVersion ? `->withPhp${this.config.phpVersion.replace('.', '')}Set()\n` : ''
+        let phpSet = ''
+        if (this.config.phpVersion) {
+            const version = this.config.phpVersion.replace('.', '')
+            if (Number(version) >= 80) {
+                phpSet = `->withPhpSets(php${version}: true)\n`
+            } else {
+                phpSet = `->withPhp${version}Set()\n`
+            }
+        }
 
         const configContent = `<?php
 
