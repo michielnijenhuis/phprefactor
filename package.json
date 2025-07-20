@@ -1,5 +1,5 @@
 {
-    "name": "phprefactor",
+    "name": "phprefactor-vscode",
     "displayName": "Rector and PHPCSFixer PHP Refactoring",
     "publisher": "michielnijenhuis",
     "description": "Progressive PHP refactoring with Rector and PHPCSFixer - run on files or directories with intelligent configuration management",
@@ -7,18 +7,23 @@
     "icon": "assets/php.png",
     "repository": {
         "type": "git",
-        "url": "https://github.com/michielnijenhuis/phprefactor"
+        "url": "https://github.com/michielnijenhuis/phprefactor-vscode"
+    },
+    "homepage": "https://marketplace.visualstudio.com/items?itemName=michielnijenhuis.phprefactor-vscode",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/michielnijenhuis/phprefactor-vscode/issues"
     },
     "engines": {
         "vscode": "^1.74.0"
     },
     "categories": [
-        "Other",
         "Formatters"
     ],
     "keywords": [
         "php",
         "refactoring",
+        "formatter",
         "phpcsfixer",
         "rector",
         "modernization"
