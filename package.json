@@ -2,8 +2,12 @@
     "name": "phprefactor-vscode",
     "displayName": "Rector and PHPCSFixer PHP Refactoring",
     "publisher": "michielnijenhuis",
+    "author": {
+        "name": "Michiel Nijenhuis",
+        "email": "michiel.nijenhuis@gmail.com"
+    },
     "description": "Progressive PHP refactoring with Rector and PHPCSFixer - run on files or directories with intelligent configuration management",
-    "version": "1.4.2",
+    "version": "1.5.0",
     "icon": "assets/php.png",
     "repository": {
         "type": "git",
@@ -200,6 +204,11 @@
                         "8.3"
                     ],
                     "description": "Target PHP version for refactoring"
+                },
+                "phprefactor.runOnSave": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Refactor current file on save"
                 },
                 "phprefactor.autoloadFile": {
                     "type": "string",

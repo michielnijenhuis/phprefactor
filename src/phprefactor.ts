@@ -27,6 +27,7 @@ interface PHPCSFixerConfig extends RefactorToolConfig {
 
 export interface PHPRefactorConfig {
     phpVersion?: PHPVersion
+    runOnSave: boolean
     autoloadFile: string
     paths: string[]
     skip: string[]
@@ -86,6 +87,10 @@ export class PHPRefactorManager {
 
     public get notifyOnResult() {
         return this.config.notifyOnResult
+    }
+
+    public get runOnSave() {
+        return this.config.runOnSave
     }
 
     private get rootPath() {
@@ -278,6 +283,7 @@ export class PHPRefactorManager {
             skip: config.get('skip', ['vendor']),
             notifyOnResult: config.get('notifyOnResult', true),
             phpVersion: config.get<PHPVersion>('phpVersion'),
+            runOnSave: config.get('runOnSave', false),
             autoloadFile: config.get('autoloadFile', 'vendor/autoload.php'),
             showProgressNotification: config.get('showProgressNotification', false),
             openDiffAfterRun: config.get('openDiffAfterRun', false),

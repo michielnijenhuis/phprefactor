@@ -3,4 +3,4 @@
 pnpm build
 # shellcheck disable=SC2006
 version=`jq -r '.version' './package.json'`
-code --install-extension "./phprefactor-$version.vsix" 
+code --install-extension "./phprefactor-vscode-$version.vsix" 

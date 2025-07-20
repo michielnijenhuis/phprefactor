@@ -47,6 +47,13 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(vscode.commands.registerCommand(`phprefactor.${command}`, callback))
     }
 
+    // Run on save if enabled
+    vscode.workspace.onDidSaveTextDocument(async (document) => {
+        if (manager.runOnSave && document.languageId === 'php') {
+            await runOnFile(document.uri)
+        }
+    })
+
     // Refresh config when settings change
     vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration('phprefactor')) {
