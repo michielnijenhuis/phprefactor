@@ -4,13 +4,13 @@ A VS Code extension that provides seamless integration with PHPCSFixer and [Rect
 
 ## Features
 
-✨ **Progressive Refactoring**: Run PHPCSFixer and/or Rector on specific files or directories instead of the entire codebase
-🔧 **Intelligent Configuration**: Auto-generate config files from VS Code settings or use custom config files
-📦 **Auto-Installation**: Install PHPCSFixer and/or Rector globally if not available
-🎯 **Context Menu Integration**: Right-click on files and folders to run PHPCSFixer and/or Rector
-🔍 **Dry Run Support**: Preview changes before applying them
-📊 **Progress Tracking**: Visual progress indicators and detailed output logs
-🔄 **Git Integration**: Automatically open diff view after refactoring
+-   ✨ **Progressive Refactoring**: Run PHPCSFixer and/or Rector on specific files or directories instead of the entire codebase
+-   🔧 **Intelligent Configuration**: Auto-generate config files from VS Code settings or use custom config files
+-   📦 **Auto-Installation**: Install PHPCSFixer and/or Rector globally if not available
+-   🎯 **Context Menu Integration**: Right-click on files and folders to run PHPCSFixer and/or Rector
+-   🔍 **Dry Run Support**: Preview changes before applying them
+-   📊 **Progress Tracking**: Visual progress indicators and detailed output logs
+-   🔄 **Git Integration**: Automatically open diff view after refactoring
 
 ## Installation
 
