@@ -40,7 +40,7 @@
                 "category": "phprefactor"
             },
             {
-                "command": "phprefactor.runPhpCsFixerOnFile",
+                "command": "phprefactor.runPHPCSFixerOnFile",
                 "title": "Refactor Current File (PHPCSFixer Only)",
                 "category": "phprefactor"
             },
@@ -60,7 +60,7 @@
                 "category": "phprefactor"
             },
             {
-                "command": "phprefactor.runPhpCsFixerOnDirectory",
+                "command": "phprefactor.runPHPCSFixerOnDirectory",
                 "title": "Refactor Directory (PHPCSFixer Only)",
                 "category": "phprefactor"
             },
@@ -80,7 +80,7 @@
                 "category": "phprefactor"
             },
             {
-                "command": "phprefactor.generatePhpCsFixerConfig",
+                "command": "phprefactor.generatePHPCSFixerConfig",
                 "title": "Generate PHPCSFixer Config",
                 "category": "phprefactor"
             },
@@ -90,7 +90,7 @@
                 "category": "phprefactor"
             },
             {
-                "command": "phprefactor.installPhpCsFixer",
+                "command": "phprefactor.installPHPCSFixer",
                 "title": "Install PHPCSFixer Globally",
                 "category": "phprefactor"
             },
@@ -109,7 +109,7 @@
                 },
                 {
                     "when": "resourceExtname == .php",
-                    "command": "phprefactor.runPhpCsFixerOnFile",
+                    "command": "phprefactor.runPHPCSFixerOnFile",
                     "group": "phprefactor@2"
                 },
                 {
@@ -129,7 +129,7 @@
                 },
                 {
                     "when": "explorerResourceIsFolder",
-                    "command": "phprefactor.runPhpCsFixerOnDirectory",
+                    "command": "phprefactor.runPHPCSFixerOnDirectory",
                     "group": "phprefactor@6"
                 },
                 {
@@ -151,7 +151,7 @@
                 },
                 {
                     "when": "resourceExtname == .php",
-                    "command": "phprefactor.runPhpCsFixerOnFile",
+                    "command": "phprefactor.runPHPCSFixerOnFile",
                     "group": "phprefactor@2"
                 },
                 {
@@ -171,7 +171,7 @@
                     "when": "editorLangId == php"
                 },
                 {
-                    "command": "phprefactor.runPhpCsFixerOnFile",
+                    "command": "phprefactor.runPHPCSFixerOnFile",
                     "when": "editorLangId == php"
                 },
                 {

@@ -1,43 +1,45 @@
 import * as vscode from 'vscode'
-import {
-    dryRunOnDirectory,
-    runOnDirectory,
-    runPhpCsFixerOnDirectory,
-    runRectorOnDirectory,
-} from './commands/run_on_directory'
-import { dryRunOnFile, runOnFile, runPhpCsFixerOnFile, runRectorOnFile } from './commands/run_on_file'
+import { runOnDirectory } from './commands/run_on_directory'
+import { runOnFile } from './commands/run_on_file'
 import { PHPRefactorManager } from './phprefactor'
+import { PhpCsFixer } from './tools/phpcsfixer'
+import { Rector } from './tools/rector'
 
 export function activate(context: vscode.ExtensionContext) {
+    PHPRefactorManager.tools = [PhpCsFixer, Rector]
+
     const manager = PHPRefactorManager.getInstance()
 
-    const commands = {
+    const commands: Record<string, (uri?: vscode.Uri) => Promise<void>> = {
         runOnFile,
-        runPhpCsFixerOnFile,
-        runRectorOnFile,
-        dryRunOnFile,
+        dryRunOnFile: async (uri?: vscode.Uri) => {
+            await runOnFile(uri, true)
+        },
         runOnDirectory,
-        runPhpCsFixerOnDirectory,
-        runRectorOnDirectory,
-        dryRunOnDirectory,
-        generateRectorConfig: async () => {
-            await manager.generateConfigFromSettings(manager.rector)
-        },
-        generatePhpCsFixerConfig: async () => {
-            await manager.generateConfigFromSettings(manager.phpcsfixer)
-        },
-        installRector: async () => {
-            await manager.install(manager.rector)
-        },
-        installPhpCsFixer: async () => {
-            await manager.install(manager.phpcsfixer)
+        dryRunOnDirectory: async (uri?: vscode.Uri) => {
+            await runOnDirectory(uri, true)
         },
         checkInstallation: async () => {
-            await Promise.all([
-                manager.checkInstallation(manager.rector),
-                manager.checkInstallation(manager.phpcsfixer),
-            ])
+            await Promise.all(manager.orderedTools.map((tool) => manager.checkInstallation(tool)))
         },
+    }
+
+    for (const tool of manager.orderedTools) {
+        commands[`run${tool.name}onFile`] = async function (uri?: vscode.Uri) {
+            await runOnFile(uri, false, [tool])
+        }
+
+        commands[`run${tool.name}onDirectory`] = async function (uri?: vscode.Uri) {
+            await runOnDirectory(uri, false, [tool])
+        }
+
+        commands[`generate${tool.name}Config`] = async function () {
+            await manager.generateConfigFromSettings(tool)
+        }
+
+        commands[`install${tool.name}`] = async function () {
+            await manager.install(tool)
+        }
     }
 
     // Register commands

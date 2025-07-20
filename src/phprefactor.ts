@@ -3,8 +3,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { promisify } from 'util'
 import * as vscode from 'vscode'
-import { PhpCsFixer } from './tools/phpcsfixer'
-import { Rector } from './tools/rector'
 import { RefactorTool } from './tools/refactor_tool'
 
 const execAsync = promisify(exec)
@@ -41,9 +39,8 @@ export interface PHPRefactorConfig {
 
 type RefactorToolConstructor = new (config: PHPRefactorConfig) => RefactorTool
 
-const tools: RefactorToolConstructor[] = [Rector, PhpCsFixer]
-
 export class PHPRefactorManager {
+    public static tools: RefactorToolConstructor[] = []
     private static instance?: PHPRefactorManager
 
     public readonly tools: Record<RefactorToolKey, RefactorTool>
@@ -55,7 +52,7 @@ export class PHPRefactorManager {
         this.outputChannel = vscode.window.createOutputChannel('PHPRefactor')
         this.config = this.loadConfig()
 
-        this.tools = tools.reduce((acc, tool) => {
+        this.tools = PHPRefactorManager.tools.reduce((acc, tool) => {
             const instance = new tool(this.config)
             acc[instance.key] = instance
 
