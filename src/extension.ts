@@ -26,11 +26,15 @@ export function activate(context: vscode.ExtensionContext) {
             const ok = results.filter((result) => result.status === 'fulfilled').length === results.length
 
             if (ok) {
-                vscode.window.showInformationMessage('All tools installed successfully.')
-            } else {
-                const failedTools = tools.filter((_, i) => results[i].status === 'rejected')
-                vscode.window.showErrorMessage(`${formatNames(failedTools)} not installed successfully.`)
+                if (manager.notifyOnResult) {
+                    vscode.window.showInformationMessage('All tools installed successfully.')
+                }
+
+                return
             }
+
+            const failedTools = tools.filter((_, i) => results[i].status === 'rejected')
+            vscode.window.showErrorMessage(`${formatNames(failedTools)} not installed successfully.`)
         },
     }
 
