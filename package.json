@@ -246,6 +246,11 @@
                     "default": "",
                     "description": "Path to custom Rector config file. Leave empty to auto-generate from settings."
                 },
+                "phprefactor.rector.priority": {
+                    "type": "integer",
+                    "default": 20,
+                    "description": "Priority of Rector tool. Lower numbers run first."
+                },
                 "phprefactor.phpcsfixer.executablePath": {
                     "type": "string",
                     "default": "vendor/bin/php-cs-fixer",
@@ -255,6 +260,11 @@
                     "type": "string",
                     "default": "",
                     "description": "Path to custom PHPCSFixer config file. Leave empty to auto-generate from settings."
+                },
+                "phprefactor.phpcsfixer.priority": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Priority of PHPCSFixer tool. Lower numbers run first."
                 }
             }
         }

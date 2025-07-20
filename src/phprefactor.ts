@@ -13,14 +13,18 @@ type PHPVersion = '7.2' | '7.3' | '7.4' | '8.0' | '8.1' | '8.2' | '8.3'
 
 export type RefactorToolKey = 'rector' | 'phpcsfixer'
 
-interface RectorConfig {
+interface RefactorToolConfig {
+    priority: number
     executablePath: string
     configPath: string
 }
 
-interface PHPCSFixerConfig {
-    executablePath: string
-    configPath: string
+interface RectorConfig extends RefactorToolConfig {
+    //
+}
+
+interface PHPCSFixerConfig extends RefactorToolConfig {
+    //
 }
 
 export interface PHPRefactorConfig {
@@ -70,7 +74,7 @@ export class PHPRefactorManager {
     }
 
     public get orderedTools(): RefactorTool[] {
-        return [this.phpcsfixer, this.rector]
+        return Object.values(this.tools).sort((a, b) => this.config[a.key].priority - this.config[b.key].priority)
     }
 
     public get notifyOnResult() {
@@ -256,10 +260,12 @@ export class PHPRefactorManager {
             rector: {
                 executablePath: config.get('rector.executablePath', 'vendor/bin/rector'),
                 configPath: config.get('rector.configPath', ''),
+                priority: config.get('rector.priority', 20),
             },
             phpcsfixer: {
                 executablePath: config.get('phpcsfixer.executablePath', 'vendor/bin/php-cs-fixer'),
                 configPath: config.get('phpcsfixer.configPath', ''),
+                priority: config.get('phpcsfixer.priority', 10),
             },
             paths: config.get('paths', ['__DIR__']),
             skip: config.get('skip', ['vendor']),
