@@ -1,21 +1,9 @@
 import * as vscode from 'vscode'
-import { RefactorTool, tools } from '../phprefactor'
+import { PHPRefactorManager } from '../phprefactor'
+import { RefactorTool } from '../tools/refactor_tool'
 import { runCommand } from './run_command'
 
-async function doRunOnDirectory(uri?: vscode.Uri, dryRun = false, only?: RefactorTool) {
-    let name: string
-    if (only) {
-        name = tools[only]
-    } else {
-        const names = Object.values(tools)
-        if (names.length > 2) {
-            const last = names.pop()
-            name = names.join(', ') + ` and ${last}`
-        } else {
-            name = names.join(' and ')
-        }
-    }
-
+async function doRunOnDirectory(uri?: vscode.Uri, dryRun: boolean = false, tools?: RefactorTool[]) {
     let directoryPath = uri?.fsPath
 
     if (!directoryPath) {
@@ -33,7 +21,7 @@ async function doRunOnDirectory(uri?: vscode.Uri, dryRun = false, only?: Refacto
         return
     }
 
-    await runCommand(directoryPath, dryRun, only)
+    await runCommand(directoryPath, dryRun, tools)
 }
 
 export async function runOnDirectory(uri?: vscode.Uri) {
@@ -41,11 +29,13 @@ export async function runOnDirectory(uri?: vscode.Uri) {
 }
 
 export async function runPhpCsFixerOnDirectory(uri?: vscode.Uri) {
-    await doRunOnDirectory(uri, false, 'phpcsfixer')
+    const manager = PHPRefactorManager.getInstance()
+    await doRunOnDirectory(uri, false, [manager.phpcsfixer])
 }
 
 export async function runRectorOnDirectory(uri?: vscode.Uri) {
-    await doRunOnDirectory(uri, false, 'rector')
+    const manager = PHPRefactorManager.getInstance()
+    await doRunOnDirectory(uri, false, [manager.rector])
 }
 
 export async function dryRunOnDirectory(uri?: vscode.Uri) {

@@ -1,43 +1,55 @@
 import * as vscode from 'vscode'
-import { PHPRefactorManager, RefactorTool, tools } from '../phprefactor'
+import { PHPRefactorManager } from '../phprefactor'
+import { RefactorTool } from '../tools/refactor_tool'
 
-export async function runCommand(target: string, dryRun = false, only?: RefactorTool) {
+export async function runCommand(target: string, dryRun = false, tools?: RefactorTool[]) {
     const manager = PHPRefactorManager.getInstance()
 
+    if (!tools) {
+        tools = manager.orderedTools
+    }
+
     let name: string
-    if (only) {
-        name = tools[only]
+    const names = tools.map((tool) => tool.name)
+    if (names.length > 2) {
+        const last = names.pop()
+        name = names.join(', ') + ` and ${last}`
     } else {
-        const names = Object.values(tools)
-        if (names.length > 2) {
-            const last = names.pop()
-            name = names.join(', ') + ` and ${last}`
-        } else {
-            name = names.join(' and ')
-        }
+        name = names.join(' and ')
     }
 
     try {
-        const promises: Promise<boolean>[] = []
-        if (!only || only === 'phpcsfixer') {
-            promises.push(manager.runPhpCsFixerCommand(target, dryRun))
-        }
-        if (!only || only === 'rector') {
-            promises.push(manager.runRectorCommand(target, dryRun))
+        const errors: string[] = new Array(tools.length)
+
+        for (let i = 0; i < tools.length; i++) {
+            const tool = tools[i]
+
+            try {
+                await manager.runCommand(tool, target, dryRun)
+            } catch (error) {
+                const e = error instanceof Error ? error.message : String(error) || 'Unknown error'
+                errors[i] = e
+            }
         }
 
-        const results = await Promise.allSettled(promises)
-
-        if (!manager.notifyOnResult) {
+        const success = errors.filter(Boolean).length === 0
+        if (success && !manager.notifyOnResult) {
             return
         }
-
-        const success = results.every((result) => result.status === 'fulfilled' && result.value)
 
         if (success) {
             vscode.window.showInformationMessage(`${name} completed successfully.`)
         } else {
-            const messages = results.map((res) => (res.status === 'rejected' ? res.reason.message : '')).filter(Boolean)
+            const failedTools = tools.filter((_, i) => errors[i])
+            const names = failedTools.map((tool) => tool.name)
+            if (names.length > 2) {
+                const last = names.pop()
+                name = names.join(', ') + ` and ${last}`
+            } else {
+                name = names.join(' and ')
+            }
+
+            const messages = errors.filter(Boolean)
             vscode.window.showErrorMessage(`${name} failed with errors:\n${messages.join(',\n')}`)
         }
     } catch (error) {

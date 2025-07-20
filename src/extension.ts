@@ -21,20 +21,22 @@ export function activate(context: vscode.ExtensionContext) {
         runRectorOnDirectory,
         dryRunOnDirectory,
         generateRectorConfig: async () => {
-            await manager.generateConfigFromSettings('rector')
+            await manager.generateConfigFromSettings(manager.rector)
         },
         generatePhpCsFixerConfig: async () => {
-            await manager.generateConfigFromSettings('phpcsfixer')
+            await manager.generateConfigFromSettings(manager.phpcsfixer)
         },
         installRector: async () => {
-            await manager.install('rector', 'composer global require rector/rector')
+            await manager.install(manager.rector)
         },
         installPhpCsFixer: async () => {
-            await manager.install('phpcsfixer', 'composer global require friendsofphp/php-cs-fixer')
+            await manager.install(manager.phpcsfixer)
         },
         checkInstallation: async () => {
-            await manager.checkInstallation('rector')
-            await manager.checkInstallation('phpcsfixer')
+            await Promise.all([
+                manager.checkInstallation(manager.rector),
+                manager.checkInstallation(manager.phpcsfixer),
+            ])
         },
     }
 
