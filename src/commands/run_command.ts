@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { PHPRefactorManager } from '../phprefactor'
 import { RefactorTool } from '../tools/refactor_tool'
+import { castError } from '../util'
 
 export async function runCommand(target: string, dryRun = false, tools?: RefactorTool[]) {
     const manager = PHPRefactorManager.getInstance()
@@ -19,20 +20,14 @@ export async function runCommand(target: string, dryRun = false, tools?: Refacto
     }
 
     try {
-        const errors: string[] = new Array(tools.length)
+        const results = await Promise.allSettled(tools.map((tool) => manager.runCommand(tool, target, dryRun)))
+        const errors = results.map((result) => (result.status === 'fulfilled' ? null : castError(result.reason)))
+        const success = errors.filter(Boolean).length === 0
 
-        for (let i = 0; i < tools.length; i++) {
-            const tool = tools[i]
-
-            try {
-                await manager.runCommand(tool, target, dryRun)
-            } catch (error) {
-                const e = error instanceof Error ? error.message : String(error) || 'Unknown error'
-                errors[i] = e
-            }
+        if (success && manager.openDiffAfterRun) {
+            vscode.commands.executeCommand('git.openChange')
         }
 
-        const success = errors.filter(Boolean).length === 0
         if (success && !manager.notifyOnResult) {
             return
         }
@@ -53,8 +48,6 @@ export async function runCommand(target: string, dryRun = false, tools?: Refacto
             vscode.window.showErrorMessage(`${name} failed with errors:\n${messages.join(',\n')}`)
         }
     } catch (error) {
-        vscode.window.showErrorMessage(
-            `Error running ${name}: ${error instanceof Error ? error.message : String(error) || 'Unknown error'}`,
-        )
+        vscode.window.showErrorMessage(`Error running ${name}: ${castError(error)}`)
     }
 }

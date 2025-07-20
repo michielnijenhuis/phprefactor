@@ -39,6 +39,10 @@ export interface PHPRefactorConfig {
     phpcsfixer: PHPCSFixerConfig
 }
 
+type RefactorToolConstructor = new (config: PHPRefactorConfig) => RefactorTool
+
+const tools: RefactorToolConstructor[] = [Rector, PhpCsFixer]
+
 export class PHPRefactorManager {
     private static instance?: PHPRefactorManager
 
@@ -51,10 +55,12 @@ export class PHPRefactorManager {
         this.outputChannel = vscode.window.createOutputChannel('PHPRefactor')
         this.config = this.loadConfig()
 
-        this.tools = {
-            rector: new Rector(this.config),
-            phpcsfixer: new PhpCsFixer(this.config),
-        }
+        this.tools = tools.reduce((acc, tool) => {
+            const instance = new tool(this.config)
+            acc[instance.key] = instance
+
+            return acc
+        }, {} as Record<RefactorToolKey, RefactorTool>)
     }
 
     public static getInstance(): PHPRefactorManager {
@@ -75,6 +81,10 @@ export class PHPRefactorManager {
 
     public get orderedTools(): RefactorTool[] {
         return Object.values(this.tools).sort((a, b) => this.config[a.key].priority - this.config[b.key].priority)
+    }
+
+    public get openDiffAfterRun() {
+        return this.config.openDiffAfterRun
     }
 
     public get notifyOnResult() {
