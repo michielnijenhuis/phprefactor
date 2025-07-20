@@ -7,7 +7,7 @@
         "email": "michiel.nijenhuis@gmail.com"
     },
     "description": "Progressive PHP refactoring with Rector and PHPCSFixer - run on files or directories with intelligent configuration management",
-    "version": "1.5.2",
+    "version": "1.6.0",
     "icon": "assets/php.png",
     "repository": {
         "type": "git",
@@ -37,6 +37,11 @@
     ],
     "main": "./out/extension.js",
     "contributes": {
+        "languages": [
+            {
+                "id": "php"
+            }
+        ],
         "commands": [
             {
                 "command": "phprefactor.runOnFile",

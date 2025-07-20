@@ -1,3 +1,4 @@
+import { readFile } from 'fs/promises'
 import * as vscode from 'vscode'
 import { runOnDirectory } from './commands/run_on_directory'
 import { runOnFile } from './commands/run_on_file'
@@ -78,11 +79,39 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // Run on save if enabled
-    vscode.workspace.onDidSaveTextDocument(async (document) => {
+    const disposable = vscode.workspace.onDidSaveTextDocument(async (document) => {
         if (manager.runOnSave && document.languageId === 'php') {
             await runOnFile(document.uri)
         }
     })
+    context.subscriptions.push(disposable)
+
+    // Register document formatting provider
+    const provider = vscode.languages.registerDocumentFormattingEditProvider('php', {
+        async provideDocumentFormattingEdits(document: vscode.TextDocument): Promise<vscode.TextEdit[]> {
+            try {
+                if (document.isDirty) {
+                    await document.save()
+                }
+
+                await runOnFile(document.uri)
+
+                const formattedContent = await readFile(document.fileName, 'utf8')
+
+                const fullRange = new vscode.Range(
+                    document.positionAt(0),
+                    document.positionAt(document.getText().length),
+                )
+
+                return [vscode.TextEdit.replace(fullRange, formattedContent)]
+            } catch (error) {
+                vscode.window.showErrorMessage(`Formatting failed: ${castError(error)}`)
+
+                return []
+            }
+        },
+    })
+    context.subscriptions.push(provider)
 
     // Refresh config when settings change
     vscode.workspace.onDidChangeConfiguration((event) => {
