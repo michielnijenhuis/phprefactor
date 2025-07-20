@@ -1,22 +1,13 @@
 import * as vscode from 'vscode'
 import { PHPRefactorManager } from '../phprefactor'
 import { RefactorTool } from '../tools/refactor_tool'
-import { castError } from '../util'
+import { castError, formatNames } from '../util'
 
 export async function runCommand(target: string, dryRun = false, tools?: RefactorTool[]) {
     const manager = PHPRefactorManager.getInstance()
 
     if (!tools) {
         tools = manager.orderedTools
-    }
-
-    let name: string
-    const names = tools.map((tool) => tool.name)
-    if (names.length > 2) {
-        const last = names.pop()
-        name = names.join(', ') + ` and ${last}`
-    } else {
-        name = names.join(' and ')
     }
 
     try {
@@ -33,21 +24,13 @@ export async function runCommand(target: string, dryRun = false, tools?: Refacto
         }
 
         if (success) {
-            vscode.window.showInformationMessage(`${name} completed successfully.`)
+            vscode.window.showInformationMessage(`${manager.formattedNames} completed successfully.`)
         } else {
             const failedTools = tools.filter((_, i) => errors[i])
-            const names = failedTools.map((tool) => tool.name)
-            if (names.length > 2) {
-                const last = names.pop()
-                name = names.join(', ') + ` and ${last}`
-            } else {
-                name = names.join(' and ')
-            }
-
             const messages = errors.filter(Boolean)
-            vscode.window.showErrorMessage(`${name} failed with errors:\n${messages.join(',\n')}`)
+            vscode.window.showErrorMessage(`${formatNames(failedTools)} failed with errors:\n${messages.join(',\n')}`)
         }
     } catch (error) {
-        vscode.window.showErrorMessage(`Error running ${name}: ${castError(error)}`)
+        vscode.window.showErrorMessage(`Error running ${manager.formattedNames}: ${castError(error)}`)
     }
 }

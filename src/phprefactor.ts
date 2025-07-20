@@ -4,6 +4,7 @@ import * as path from 'path'
 import { promisify } from 'util'
 import * as vscode from 'vscode'
 import { RefactorTool } from './tools/refactor_tool'
+import { formatNames } from './util'
 
 const execAsync = promisify(exec)
 
@@ -79,6 +80,10 @@ export class PHPRefactorManager {
 
     public get orderedTools(): RefactorTool[] {
         return Object.values(this.tools).sort((a, b) => this.config[a.key].priority - this.config[b.key].priority)
+    }
+
+    public get formattedNames(): string {
+        return formatNames(this.orderedTools)
     }
 
     public get openDiffAfterRun() {
