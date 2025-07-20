@@ -9,6 +9,8 @@ import { dryRunOnFile, runOnFile, runPhpCsFixerOnFile, runRectorOnFile } from '.
 import { PHPRefactorManager } from './phprefactor'
 
 export function activate(context: vscode.ExtensionContext) {
+    const manager = PHPRefactorManager.getInstance()
+
     const commands = {
         runOnFile,
         runPhpCsFixerOnFile,
@@ -18,37 +20,28 @@ export function activate(context: vscode.ExtensionContext) {
         runPhpCsFixerOnDirectory,
         runRectorOnDirectory,
         dryRunOnDirectory,
+        generateRectorConfig: async () => {
+            await manager.generateConfigFromSettings('rector')
+        },
+        generatePhpCsFixerConfig: async () => {
+            await manager.generateConfigFromSettings('phpcsfixer')
+        },
+        installRector: async () => {
+            await manager.install('rector', 'composer global require rector/rector')
+        },
+        installPhpCsFixer: async () => {
+            await manager.install('phpcsfixer', 'composer global require friendsofphp/php-cs-fixer')
+        },
+        checkInstallation: async () => {
+            await manager.checkInstallation('rector')
+            await manager.checkInstallation('phpcsfixer')
+        },
     }
 
     // Register commands
     for (const [command, callback] of Object.entries(commands)) {
         context.subscriptions.push(vscode.commands.registerCommand(`phprefactor.${command}`, callback))
     }
-
-    const manager = PHPRefactorManager.getInstance()
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('phprefactor.generateRectorConfig', async () => {
-            await manager.generateRectorConfigFromSettings()
-        }),
-
-        vscode.commands.registerCommand('phprefactor.generatePhpCsFixerConfig', async () => {
-            await manager.generatePhpCsFixerConfigFromSettings()
-        }),
-
-        vscode.commands.registerCommand('phprefactor.installRector', async () => {
-            await manager.installRector()
-        }),
-
-        vscode.commands.registerCommand('phprefactor.installPhpCsFixer', async () => {
-            await manager.installPhpCsFixer()
-        }),
-
-        vscode.commands.registerCommand('phprefactor.checkInstallation', async () => {
-            await manager.checkRectorInstallation()
-            await manager.checkPhpCsFixerInstallation()
-        }),
-    )
 
     // Refresh config when settings change
     vscode.workspace.onDidChangeConfiguration((event) => {

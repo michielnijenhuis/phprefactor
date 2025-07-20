@@ -8,6 +8,13 @@ const execAsync = promisify(exec)
 
 type PHPVersion = '7.2' | '7.3' | '7.4' | '8.0' | '8.1' | '8.2' | '8.3'
 
+export type RefactorTool = 'rector' | 'phpcsfixer'
+
+export const tools: Record<RefactorTool, string> = {
+    rector: 'Rector',
+    phpcsfixer: 'PHPCSFixer',
+}
+
 interface RectorConfig {
     executablePath: string
     configPath: string
@@ -59,12 +66,11 @@ export class PHPRefactorManager {
     }
 
     private get rootPath() {
-        return vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? '.'
+        return vscode.workspace.workspaceFolders?.[0].uri.fsPath
     }
 
     private loadConfig(): PHPRefactorConfig {
         const config = vscode.workspace.getConfiguration('phprefactor')
-        const phpVersion = config.get<PHPVersion>('phpVersion')
 
         return {
             rector: {
@@ -78,75 +84,57 @@ export class PHPRefactorManager {
             paths: config.get('paths', ['__DIR__']),
             skip: config.get('skip', ['vendor']),
             notifyOnResult: config.get('notifyOnResult', true),
-            phpVersion: phpVersion,
+            phpVersion: config.get<PHPVersion>('phpVersion'),
             autoloadFile: config.get('autoloadFile', 'vendor/autoload.php'),
             showProgressNotification: config.get('showProgressNotification', false),
             openDiffAfterRun: config.get('openDiffAfterRun', false),
         }
     }
 
-    private async getRectorExecutable(): Promise<string> {
-        let mayThrow = true
-        if (!this.config.rector.executablePath || this.config.rector.executablePath === 'vendor/bin/rector') {
-            mayThrow = false
-            this.config.rector.executablePath = this.realpath('vendor/bin/rector')
-        } else {
-            this.config.rector.executablePath = this.realpath(this.config.rector.executablePath)
+    private async getExecutable(tool: RefactorTool, name?: string): Promise<string> {
+        if (!name) {
+            name = tool
         }
 
-        if (fs.existsSync(this.config.rector.executablePath)) {
-            return this.config.rector.executablePath
+        let mayThrow = true
+        if (!this.config[tool].executablePath || this.config[tool].executablePath === `vendor/bin/${name}`) {
+            mayThrow = false
+            this.config[tool].executablePath = this.realpath(`vendor/bin/${name}`)
+        } else {
+            this.config[tool].executablePath = this.realpath(this.config[tool].executablePath)
+        }
+
+        if (fs.existsSync(this.config[tool].executablePath)) {
+            return this.config[tool].executablePath
         } else if (mayThrow) {
-            throw new Error(`Rector executable not found at: ${this.config.rector.executablePath}`)
+            throw new Error(`${tools[tool]} executable not found at: ${this.config[tool].executablePath}`)
         }
 
         try {
-            const { stdout } = await execAsync('which rector || where rector')
+            const { stdout } = await execAsync(`which ${name} || where ${name}`)
             return stdout.trim()
         } catch (error) {
-            throw new Error('Rector not found. Please install it globally or specify the path in settings.')
+            throw new Error(`${tools[tool]} not found. Please install it globally or specify the path in settings.`)
         }
     }
 
-    private async getPhpCsFixerExecutable(): Promise<string> {
-        let mayThrow = true
-        if (
-            !this.config.phpcsfixer.executablePath ||
-            this.config.phpcsfixer.executablePath === 'vendor/bin/php-cs-fixer'
-        ) {
-            mayThrow = false
-            this.config.phpcsfixer.executablePath = this.realpath('vendor/bin/php-cs-fixer')
-        } else {
-            this.config.phpcsfixer.executablePath = this.realpath(this.config.phpcsfixer.executablePath)
-        }
-
-        if (fs.existsSync(this.config.phpcsfixer.executablePath)) {
-            return this.config.phpcsfixer.executablePath
-        } else if (mayThrow) {
-            throw new Error(`PHPCSFixer executable not found at: ${this.config.phpcsfixer.executablePath}`)
-        }
-
-        try {
-            const { stdout } = await execAsync('which phpcsfixer || where phpcsfixer')
-            return stdout.trim()
-        } catch (error) {
-            throw new Error('PHPCSFixer not found. Please install it globally or specify the path in settings.')
-        }
-    }
-
-    private async generateRectorConfigFile(): Promise<string> {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
-        if (!workspaceFolder) {
+    private async generateConfigFile(name: RefactorTool, content: string): Promise<string> {
+        if (!this.rootPath) {
             throw new Error('No workspace folder found')
         }
 
-        const configPath = path.join(workspaceFolder.uri.fsPath, 'rector.php')
-        this.config.rector.configPath = configPath
+        const configPath = path.join(this.rootPath, `${name}.php`)
+        this.config[name].configPath = configPath
 
         if (fs.existsSync(configPath)) {
             return configPath
         }
 
+        fs.writeFileSync(configPath, content)
+        return configPath
+    }
+
+    private async generateRectorConfigFile(): Promise<string> {
         let phpSet = ''
         if (this.config.phpVersion) {
             const version = this.config.phpVersion.replace('.', '')
@@ -189,23 +177,10 @@ if (file_exists('${this.config.autoloadFile}')) {
 return $config;
 `
 
-        fs.writeFileSync(configPath, configContent)
-        return configPath
+        return await this.generateConfigFile('rector', configContent)
     }
 
     private async generatePhpCsFixerConfigFile(): Promise<string> {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
-        if (!workspaceFolder) {
-            throw new Error('No workspace folder found')
-        }
-
-        const configPath = path.join(workspaceFolder.uri.fsPath, 'phpcsfixer.php')
-        this.config.phpcsfixer.configPath = configPath
-
-        if (fs.existsSync(configPath)) {
-            return configPath
-        }
-
         const configContent = `<?php
 
 $finder = (new PhpCsFixer\\Finder())
@@ -222,6 +197,7 @@ return (new PhpCsFixer\\Config())
         '@PSR12' => true,
         '@PHP73Migration' => true, 
         '@PhpCsFixer' => true, 
+        '@Symfony' => true, 
         'array_syntax' => ['syntax' => 'short'],
         'binary_operator_spaces' => ['default' => 'single_space'],
         'cast_spaces' => ['space' => 'single'],
@@ -248,6 +224,9 @@ return (new PhpCsFixer\\Config())
         'phpdoc_trim_consecutive_blank_line_separation' => true,
         'simplified_null_return' => false,
         'yoda_style' => false,
+        'global_namespace_import' => [
+            'import_classes' => true,
+        ],
     ])
     ->setIndent('    ')
     ->setRiskyAllowed(true)
@@ -255,71 +234,54 @@ return (new PhpCsFixer\\Config())
     ->setFinder($finder)
 ;
 `
-
-        fs.writeFileSync(configPath, configContent)
-        return configPath
+        return await this.generateConfigFile('phpcsfixer', configContent)
     }
 
-    private async getRectorConfigPath(): Promise<string> {
-        if (this.config.rector.configPath && fs.existsSync(this.realpath(this.config.rector.configPath))) {
-            return this.config.rector.configPath
+    private async getConfigPath(name: RefactorTool): Promise<string> {
+        if (this.config[name].configPath && fs.existsSync(this.realpath(this.config[name].configPath))) {
+            return this.config[name].configPath
         }
 
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
-        if (!workspaceFolder) {
+        if (!this.rootPath) {
             throw new Error('No workspace folder found')
         }
 
-        const defaultConfigPath = path.join(workspaceFolder.uri.fsPath, 'rector.php')
+        const defaultConfigPath = path.join(this.rootPath, name + '.php')
 
         if (fs.existsSync(defaultConfigPath)) {
             return defaultConfigPath
         }
 
-        // Generate config from settings
-        return await this.generateRectorConfigFile()
+        switch (name) {
+            case 'rector':
+                return await this.generateRectorConfigFile()
+            case 'phpcsfixer':
+                return await this.generatePhpCsFixerConfigFile()
+            default:
+                throw new TypeError(`Unsupported refactor tool: ${name}`)
+        }
     }
 
-    private async getPhpCsFixer(): Promise<string> {
-        if (this.config.phpcsfixer.configPath && fs.existsSync(this.realpath(this.config.phpcsfixer.configPath))) {
-            return this.config.phpcsfixer.configPath
-        }
-
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
-        if (!workspaceFolder) {
-            throw new Error('No workspace folder found')
-        }
-
-        const defaultConfigPath = path.join(workspaceFolder.uri.fsPath, 'phpcsfixer.php')
-
-        if (fs.existsSync(defaultConfigPath)) {
-            return defaultConfigPath
-        }
-
-        // Generate config from settings
-        return await this.generatePhpCsFixerConfigFile()
-    }
-
-    private async runRectorCommand(target: string, dryRun: boolean = false): Promise<boolean> {
+    private async runCommand(
+        tool: RefactorTool,
+        args: string[],
+        target: string,
+        dryRun: boolean = false,
+    ): Promise<boolean> {
         try {
-            const executable = await this.getRectorExecutable()
-            const configPath = await this.getRectorConfigPath()
-
-            const args = ['process', target, '--config', configPath, '--no-progress-bar']
-
-            if (dryRun) {
-                args.push('--dry-run')
-            }
+            const executable = await this.getExecutable(tool)
+            const configPath = await this.getConfigPath(tool)
+            const name = tools[tool]
 
             this.outputChannel.clear()
-            this.outputChannel.appendLine(`Running Rector on: ${target}`)
+            this.outputChannel.appendLine(`Running ${name} on: ${target}`)
             this.outputChannel.appendLine(`Config: ${configPath}`)
             this.outputChannel.appendLine(`Command: ${executable} ${args.join(' ')}`)
             this.outputChannel.appendLine('')
 
             const progressOptions = {
                 location: vscode.ProgressLocation.Notification,
-                title: dryRun ? 'Running Rector (Dry Run)' : 'Running Rector',
+                title: dryRun ? `Running ${name} (Dry Run)` : `Running ${name}`,
                 cancellable: true,
             }
 
@@ -327,7 +289,7 @@ return (new PhpCsFixer\\Config())
                 return await vscode.window.withProgress(progressOptions, async (progress, token) => {
                     return new Promise<boolean>((resolve, reject) => {
                         const process = spawn(executable, args, {
-                            cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+                            cwd: this.rootPath,
                         })
 
                         let output = ''
@@ -347,34 +309,30 @@ return (new PhpCsFixer\\Config())
 
                         process.on('close', (code) => {
                             if (code === 0) {
-                                this.outputChannel.appendLine('\n✅ Rector completed successfully!')
-
-                                if (!dryRun && this.config.openDiffAfterRun) {
-                                    vscode.commands.executeCommand('git.openChange')
-                                }
+                                this.outputChannel.appendLine(`\n✅ ${name} completed successfully!`)
 
                                 resolve(true)
                             } else {
-                                this.outputChannel.appendLine(`\n❌ Rector failed with exit code: ${code}`)
-                                reject(new Error(`Rector failed with exit code: ${code}`))
+                                this.outputChannel.appendLine(`\n❌ ${name} failed with exit code: ${code}`)
+                                reject(new Error(`${name} failed with exit code: ${code}`))
                             }
                         })
 
                         process.on('error', (error) => {
-                            this.outputChannel.appendLine(`\n❌ Error running Rector: ${error.message}`)
+                            this.outputChannel.appendLine(`\n❌ Error running ${name}: ${error.message}`)
                             reject(error)
                         })
 
                         token.onCancellationRequested(() => {
                             process.kill()
-                            reject(new Error('Rector execution was cancelled'))
+                            reject(new Error(`${name} execution was cancelled`))
                         })
                     })
                 })
             } else {
                 return await new Promise<boolean>((resolve, reject) => {
                     const process = spawn(executable, args, {
-                        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+                        cwd: this.rootPath,
                     })
 
                     process.stdout.on('data', (data) => {
@@ -387,11 +345,11 @@ return (new PhpCsFixer\\Config())
 
                     process.on('close', (code) => {
                         if (code === 0) {
-                            this.outputChannel.appendLine('\n✅ Rector completed successfully!')
+                            this.outputChannel.appendLine(`\n✅ ${name} completed successfully!`)
                             resolve(true)
                         } else {
-                            this.outputChannel.appendLine(`\n❌ Rector failed with exit code: ${code}`)
-                            reject(new Error(`Rector failed with exit code: ${code}`))
+                            this.outputChannel.appendLine(`\n❌ ${name} failed with exit code: ${code}`)
+                            reject(new Error(`${name} failed with exit code: ${code}`))
                         }
                     })
 
@@ -407,10 +365,26 @@ return (new PhpCsFixer\\Config())
         }
     }
 
-    private async runPhpCsFixerCommand(target: string, dryRun: boolean = false): Promise<boolean> {
+    public async runRectorCommand(target: string, dryRun: boolean = false): Promise<boolean> {
         try {
-            const executable = await this.getPhpCsFixerExecutable()
-            const configPath = await this.getPhpCsFixer()
+            const configPath = await this.getConfigPath('rector')
+
+            const args = ['process', target, '--config', configPath, '--no-progress-bar']
+            if (dryRun) {
+                args.push('--dry-run')
+            }
+
+            return await this.runCommand('rector', args, target, dryRun)
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown error'
+            this.outputChannel.appendLine(`\n❌ Error: ${message}`)
+            throw error
+        }
+    }
+
+    public async runPhpCsFixerCommand(target: string, dryRun: boolean = false): Promise<boolean> {
+        try {
+            const configPath = await this.getConfigPath('phpcsfixer')
 
             const args = [
                 'fix',
@@ -420,100 +394,11 @@ return (new PhpCsFixer\\Config())
                 '--show-progress=none',
                 '--allow-unsupported-php-version=yes',
             ]
-
             if (dryRun) {
                 args.push('--dry-run')
             }
 
-            this.outputChannel.clear()
-            this.outputChannel.appendLine(`Running PHPCSFixer on: ${target}`)
-            this.outputChannel.appendLine(`Config: ${configPath}`)
-            this.outputChannel.appendLine(`Command: ${executable} ${args.join(' ')}`)
-            this.outputChannel.appendLine('')
-
-            const progressOptions = {
-                location: vscode.ProgressLocation.Notification,
-                title: dryRun ? 'Running PHPCSFixer (Dry Run)' : 'Running PHPCSFixer',
-                cancellable: true,
-            }
-
-            if (this.config.showProgressNotification) {
-                return await vscode.window.withProgress(progressOptions, async (progress, token) => {
-                    return new Promise<boolean>((resolve, reject) => {
-                        const process = spawn(executable, args, {
-                            cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
-                        })
-
-                        let output = ''
-                        let errorOutput = ''
-
-                        process.stdout.on('data', (data) => {
-                            const chunk = data.toString()
-                            output += chunk
-                            this.outputChannel.append(chunk)
-                        })
-
-                        process.stderr.on('data', (data) => {
-                            const chunk = data.toString()
-                            errorOutput += chunk
-                            this.outputChannel.append(chunk)
-                        })
-
-                        process.on('close', (code) => {
-                            if (code === 0) {
-                                this.outputChannel.appendLine('\n✅ PHPCSFixer completed successfully!')
-
-                                if (!dryRun && this.config.openDiffAfterRun) {
-                                    vscode.commands.executeCommand('git.openChange')
-                                }
-
-                                resolve(true)
-                            } else {
-                                this.outputChannel.appendLine(`\n❌ PHPCSFixer failed with exit code: ${code}`)
-                                reject(new Error(`PHPCSFixer failed with exit code: ${code}`))
-                            }
-                        })
-
-                        process.on('error', (error) => {
-                            this.outputChannel.appendLine(`\n❌ Error running PHPCSFixer: ${error.message}`)
-                            reject(error)
-                        })
-
-                        token.onCancellationRequested(() => {
-                            process.kill()
-                            reject(new Error('PHPCSFixer execution was cancelled'))
-                        })
-                    })
-                })
-            } else {
-                return await new Promise<boolean>((resolve, reject) => {
-                    const process = spawn(executable, args, {
-                        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
-                    })
-
-                    process.stdout.on('data', (data) => {
-                        this.outputChannel.append(data.toString())
-                    })
-
-                    process.stderr.on('data', (data) => {
-                        this.outputChannel.append(data.toString())
-                    })
-
-                    process.on('close', (code) => {
-                        if (code === 0) {
-                            this.outputChannel.appendLine('\n✅ PHPCSFixer completed successfully!')
-                            resolve(true)
-                        } else {
-                            this.outputChannel.appendLine(`\n❌ PHPCSFixer failed with exit code: ${code}`)
-                            reject(new Error(`PHPCSFixer failed with exit code: ${code}`))
-                        }
-                    })
-
-                    process.on('error', (error) => {
-                        reject(error)
-                    })
-                })
-            }
+            return await this.runCommand('phpcsfixer', args, target, dryRun)
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
             this.outputChannel.appendLine(`\n❌ Error: ${message}`)
@@ -521,29 +406,13 @@ return (new PhpCsFixer\\Config())
         }
     }
 
-    async runRectorOnFile(filePath: string, dryRun: boolean = false): Promise<boolean> {
-        return await this.runRectorCommand(filePath, dryRun)
-    }
-
-    async runPHPCSFixerOnFile(filePath: string, dryRun: boolean = false): Promise<boolean> {
-        return await this.runPhpCsFixerCommand(filePath, dryRun)
-    }
-
-    async runRectorOnDirectory(directoryPath: string, dryRun: boolean = false): Promise<boolean> {
-        return await this.runRectorCommand(directoryPath, dryRun)
-    }
-
-    async runPHPCSFixerOnDirectory(directoryPath: string, dryRun: boolean = false): Promise<boolean> {
-        return await this.runPhpCsFixerCommand(directoryPath, dryRun)
-    }
-
-    async checkRectorInstallation(): Promise<boolean> {
+    async checkInstallation(tool: RefactorTool): Promise<boolean> {
         try {
-            const executable = await this.getRectorExecutable()
+            const executable = await this.getExecutable(tool)
             const { stdout } = await execAsync(`${executable} --version`)
 
             this.outputChannel.clear()
-            this.outputChannel.appendLine('Rector Installation Check')
+            this.outputChannel.appendLine(`${tools[tool]} Installation Check`)
             this.outputChannel.appendLine('========================')
             this.outputChannel.appendLine(`Executable: ${executable}`)
             this.outputChannel.appendLine(`Version: ${stdout.trim()}`)
@@ -556,38 +425,20 @@ return (new PhpCsFixer\\Config())
         }
     }
 
-    async checkPhpCsFixerInstallation(): Promise<boolean> {
-        try {
-            const executable = await this.getPhpCsFixerExecutable()
-            const { stdout } = await execAsync(`${executable} --version`)
-
-            this.outputChannel.clear()
-            this.outputChannel.appendLine('PHPCSFixer Installation Check')
-            this.outputChannel.appendLine('========================')
-            this.outputChannel.appendLine(`Executable: ${executable}`)
-            this.outputChannel.appendLine(`Version: ${stdout.trim()}`)
-
-            return true
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error'
-            this.outputChannel.appendLine(`❌ ${message}`)
-            return false
-        }
-    }
-
-    async installRector(): Promise<boolean> {
+    async install(tool: RefactorTool, command: string): Promise<boolean> {
         try {
             this.outputChannel.clear()
-            this.outputChannel.appendLine('Installing Rector globally...')
+            this.outputChannel.appendLine(`Installing ${tools[tool]} globally...`)
 
             await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
-                    title: 'Installing Rector',
+                    title: `Installing ${tools[tool]}`,
                     cancellable: false,
                 },
                 async () => {
-                    const { stdout, stderr } = await execAsync('composer global require rector/rector')
+                    // const { stdout, stderr } = await execAsync('composer global require rector/rector')
+                    const { stdout, stderr } = await execAsync(command)
                     this.outputChannel.appendLine(stdout)
                     if (stderr) {
                         this.outputChannel.appendLine('STDERR:')
@@ -596,7 +447,7 @@ return (new PhpCsFixer\\Config())
                 },
             )
 
-            this.outputChannel.appendLine('✅ Rector installed successfully!')
+            this.outputChannel.appendLine(`✅ ${tools[tool]} installed successfully!`)
             return true
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
@@ -605,59 +456,22 @@ return (new PhpCsFixer\\Config())
         }
     }
 
-    async installPhpCsFixer(): Promise<boolean> {
+    async generateConfigFromSettings(tool: RefactorTool): Promise<boolean> {
         try {
+            let configPath: string
+            switch (tool) {
+                case 'rector':
+                    configPath = await this.generateRectorConfigFile()
+                    break
+                case 'phpcsfixer':
+                    configPath = await this.generatePhpCsFixerConfigFile()
+                    break
+                default:
+                    throw new TypeError(`Unsupported refactor tool: ${tool}`)
+            }
+
             this.outputChannel.clear()
-            this.outputChannel.appendLine('Installing PHPCSFixer globally...')
-
-            await vscode.window.withProgress(
-                {
-                    location: vscode.ProgressLocation.Notification,
-                    title: 'Installing PHPCsFixer',
-                    cancellable: false,
-                },
-                async () => {
-                    const { stdout, stderr } = await execAsync('composer global require friendsofphp/php-cs-fixer')
-                    this.outputChannel.appendLine(stdout)
-                    if (stderr) {
-                        this.outputChannel.appendLine('STDERR:')
-                        this.outputChannel.appendLine(stderr)
-                    }
-                },
-            )
-
-            this.outputChannel.appendLine('✅ PHPCSFixer installed successfully!')
-            return true
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error'
-            this.outputChannel.appendLine(`❌ Installation failed: ${message}`)
-            return false
-        }
-    }
-
-    async generateRectorConfigFromSettings(): Promise<boolean> {
-        try {
-            const configPath = await this.generateRectorConfigFile()
-            this.outputChannel.clear()
-            // this.outputChannel.show()
-            this.outputChannel.appendLine(`Generated Rector config at: ${configPath}`)
-
-            const doc = await vscode.workspace.openTextDocument(configPath)
-            await vscode.window.showTextDocument(doc)
-
-            return true
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error'
-            return false
-        }
-    }
-
-    async generatePhpCsFixerConfigFromSettings(): Promise<boolean> {
-        try {
-            const configPath = await this.generatePhpCsFixerConfigFile()
-            this.outputChannel.clear()
-            // this.outputChannel.show()
-            this.outputChannel.appendLine(`Generated PHPCSFixer config at: ${configPath}`)
+            this.outputChannel.appendLine(`Generated ${tools[tool]} config at: ${configPath}`)
 
             const doc = await vscode.workspace.openTextDocument(configPath)
             await vscode.window.showTextDocument(doc)
@@ -674,6 +488,6 @@ return (new PhpCsFixer\\Config())
             return path.resolve(p)
         }
 
-        return path.resolve(this.rootPath, p)
+        return path.resolve(this.rootPath ?? '.', p)
     }
 }

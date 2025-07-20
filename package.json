@@ -3,7 +3,7 @@
     "displayName": "Rector and PHPCSFixer PHP Refactoring",
     "publisher": "michielnijenhuis",
     "description": "Progressive PHP refactoring with Rector and PHPCSFixer - run on files or directories with intelligent configuration management",
-    "version": "1.3.3",
+    "version": "1.3.4",
     "icon": "assets/php.png",
     "repository": {
         "type": "git",
@@ -31,42 +31,42 @@
         "commands": [
             {
                 "command": "phprefactor.runOnFile",
-                "title": "Run PHPCSFixer and Rector on Current File",
+                "title": "Refactor Current File",
                 "category": "phprefactor"
             },
             {
                 "command": "phprefactor.runPhpCsFixerOnFile",
-                "title": "Run PHPCSFixer on Current File",
+                "title": "Refactor Current File (PHPCSFixer Only)",
                 "category": "phprefactor"
             },
             {
                 "command": "phprefactor.runRectorOnFile",
-                "title": "Run Rector on Current File",
+                "title": "Refactor Current File (Rector Only)",
                 "category": "phprefactor"
             },
             {
                 "command": "phprefactor.dryRunOnFile",
-                "title": "Dry Run PHPCSFixer and Rector on Current File",
+                "title": "Dry Run Refactor Current File",
                 "category": "phprefactor"
             },
             {
                 "command": "phprefactor.runOnDirectory",
-                "title": "Run PHPCSFixer and Rector on Directory",
+                "title": "Refactor Directory",
                 "category": "phprefactor"
             },
             {
                 "command": "phprefactor.runPhpCsFixerOnDirectory",
-                "title": "Run PHPCSFixer on Directory",
+                "title": "Refactor Directory (PHPCSFixer Only)",
                 "category": "phprefactor"
             },
             {
                 "command": "phprefactor.runRectorOnDirectory",
-                "title": "Run Rector on Directory",
+                "title": "Refactor Directory (Rector Only)",
                 "category": "phprefactor"
             },
             {
                 "command": "phprefactor.dryRunOnDirectory",
-                "title": "Dry Run PHPCSFixer and Rector on Directory",
+                "title": "Dry Run Refactor Directory",
                 "category": "phprefactor"
             },
             {
