@@ -64,7 +64,7 @@ Configure the extension through VS Code settings (`File > Preferences > Settings
 
 ### Paths and Exclusions
 
--   **`phprefactor.paths`** (array): Default paths to scan when generating config. Default: `["__DIR____"]`
+-   **`phprefactor.paths`** (array): Default paths to scan when generating config. Default: `["__DIR__"]`
 -   **`phprefactor.skip`** (array): Paths to skip during refactoring. Default: `["vendor"]`
 -   **`phprefactor.autoloadFile`** (string): Path to autoload file. Default: `"vendor/autoload.php"`
 
@@ -328,6 +328,18 @@ This extension is licensed under the MIT License.
 
 -   Default `phprefactor.showProgressNotification` setting to `false`
 -   Add `phprefactor.notifyOnResult` setting
+
+### 1.4.0
+
+-   Add priority option to tool config
+
+### 1.5.0
+
+-   Add `phprefactor.runOnSave` setting
+
+### 1.6.0
+
+-   Add document formatting provider
 
 ## Support
 
