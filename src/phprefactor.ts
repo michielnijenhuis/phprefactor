@@ -126,7 +126,6 @@ export class PHPRefactorManager {
             const name = tool.name
             const args = tool.getCommandArgs(target, configPath, dryRun)
 
-            this.outputChannel.clear()
             this.outputChannel.appendLine(`Running ${name} on: ${target}`)
             this.outputChannel.appendLine(`Config: ${configPath}`)
             this.outputChannel.appendLine(`Command: ${executable} ${args.join(' ')}`)
@@ -223,7 +222,6 @@ export class PHPRefactorManager {
             const executable = await this.getExecutable(tool)
             const { stdout } = await execAsync(`${executable} --version`)
 
-            this.outputChannel.clear()
             this.outputChannel.appendLine(`${tool.name} Installation Check`)
             this.outputChannel.appendLine('========================')
             this.outputChannel.appendLine(`Executable: ${executable}`)
@@ -239,7 +237,6 @@ export class PHPRefactorManager {
 
     async install(tool: RefactorTool): Promise<boolean> {
         try {
-            this.outputChannel.clear()
             this.outputChannel.appendLine(`Installing ${tool.name} globally...`)
 
             await vscode.window.withProgress(
@@ -270,7 +267,6 @@ export class PHPRefactorManager {
     async generateConfigFromSettings(tool: RefactorTool): Promise<boolean> {
         try {
             const configPath: string = await this.generateConfigFile(tool)
-            this.outputChannel.clear()
             this.outputChannel.appendLine(`Generated ${tool.name} config at: ${configPath}`)
 
             const doc = await vscode.workspace.openTextDocument(configPath)
