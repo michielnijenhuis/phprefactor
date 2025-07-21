@@ -60,7 +60,8 @@ return (new PhpCsFixer\\Config())
         'no_null_property_initialization' => false,
     ])
     ->setIndent('    ')
-    ->setRiskyAllowed(true)
+    ->setRiskyAllowed(false)
+    ->setUnsupportedPhpVersionAllowed(true)
     ->setLineEnding("\\n")
     ->setFinder($finder)
 ;

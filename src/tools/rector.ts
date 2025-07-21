@@ -1,4 +1,5 @@
 import { PHPRefactorConfig } from '../phprefactor'
+import { realpath } from '../util'
 import { RefactorTool, Result } from './refactor_tool'
 
 export class Rector implements RefactorTool {
@@ -8,7 +9,7 @@ export class Rector implements RefactorTool {
     public readonly executable = 'vendor/bin/rector'
     public readonly installCommand = 'composer global require rector/rector'
 
-    constructor(private readonly config: PHPRefactorConfig) {
+    constructor(private readonly config: PHPRefactorConfig, private readonly rootPath: string | undefined) {
         //
     }
 
@@ -22,6 +23,10 @@ export class Rector implements RefactorTool {
                 phpSet = `->withPhp${version}Set()\n`
             }
         }
+
+        const autoLoader = this.config.autoloadFile
+            ? realpath(this.config.autoloadFile, this.rootPath || '')
+            : undefined
 
         return `<?php
 
@@ -48,8 +53,8 @@ $config = RectorConfig::configure()
     ${phpSet}
 ;
 
-if (file_exists('${this.config.autoloadFile}')) {
-    $config->withAutoloadPaths(['${this.config.autoloadFile}']);
+if (file_exists('${autoLoader}')) {
+    $config->withAutoloadPaths(['${autoLoader}']);
 }
 
 return $config;

@@ -1,3 +1,4 @@
+import fs from 'fs'
 import { PHPRefactorConfig } from '../phprefactor'
 import { realpath } from '../util'
 import { RefactorTool, Result } from './refactor_tool'
@@ -71,9 +72,12 @@ treatPhpDocTypesAsCertain: false
     getCommandArgs(target: string, configPath: string): string[] {
         const args = ['analyse', target, '--fix', '--configuration', configPath, '--no-progress']
 
-        const autoloader = this.config.autoloadFile
+        let autoloader = this.config.autoloadFile
         if (autoloader) {
-            args.push('--autoload-file', realpath(autoloader, this.rootPath || ''))
+            autoloader = realpath(autoloader, this.rootPath || '')
+            if (fs.existsSync(autoloader)) {
+                args.push('--autoload-file', autoloader)
+            }
         }
 
         return args
