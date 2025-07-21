@@ -15,7 +15,14 @@ export async function runCommand(target: string, dryRun = false, tools?: Refacto
     }
 
     try {
-        const results = await Promise.allSettled(tools.map((tool) => manager.runCommand(tool, target, dryRun)))
+        const start = performance.now()
+        const results: PromiseSettledResult<boolean>[] = []
+
+        for (const tool of tools) {
+            const result = await Promise.allSettled([manager.runCommand(tool, target, dryRun)])
+            results.push(...result)
+        }
+
         const errors = results.map((result) => (result.status === 'fulfilled' ? null : castError(result.reason)))
         const success = errors.filter(Boolean).length === 0
 
@@ -28,7 +35,11 @@ export async function runCommand(target: string, dryRun = false, tools?: Refacto
         }
 
         if (success) {
-            vscode.window.showInformationMessage(`${manager.formattedNames} completed successfully.`)
+            const end = performance.now()
+            const duration = (end - start) / 1000
+            vscode.window.showInformationMessage(
+                `${manager.formattedNames} completed successfully in ${duration.toFixed(3)}s.`,
+            )
         } else {
             const failedTools = tools.filter((_, i) => errors[i])
             const messages = errors.filter(Boolean)

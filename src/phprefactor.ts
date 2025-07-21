@@ -352,7 +352,7 @@ export class PHPRefactorManager {
             throw new Error('No workspace folder found')
         }
 
-        const configPath = path.join(this.rootPath, `${tool.key}.php`)
+        const configPath = path.join(this.rootPath, tool.configName)
         this.config[tool.key].configPath = configPath
 
         if (fs.existsSync(configPath)) {
@@ -373,7 +373,7 @@ export class PHPRefactorManager {
             throw new Error('No workspace folder found')
         }
 
-        const defaultConfigPath = path.join(this.rootPath, tool.key + '.php')
+        const defaultConfigPath = path.join(this.rootPath, tool.configName)
 
         if (fs.existsSync(defaultConfigPath)) {
             return defaultConfigPath

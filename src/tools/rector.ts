@@ -4,6 +4,7 @@ import { RefactorTool } from './refactor_tool'
 export class Rector implements RefactorTool {
     public readonly name = 'Rector'
     public readonly key = 'rector'
+    public readonly configName = 'rector.php'
     public readonly executable = 'vendor/bin/rector'
     public readonly installCommand = 'composer global require rector/rector'
 

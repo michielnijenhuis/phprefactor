@@ -4,6 +4,7 @@ import { RefactorTool } from './refactor_tool'
 export class PHPStan implements RefactorTool {
     public readonly name = 'PHPStan'
     public readonly key = 'phpstan'
+    public readonly configName = 'phpstan.neon'
     public readonly executable = 'vendor/bin/phpstan'
     private readonly defaultInstallCommand = 'composer global require phpstan/phpstan'
     private readonly laravelInstallCommand = 'composer global require "larastan/larastan:^3.0"'

@@ -4,6 +4,7 @@ import { RefactorTool } from './refactor_tool'
 export class PhpCsFixer implements RefactorTool {
     public readonly name = 'PHPCSFixer'
     public readonly key = 'phpcsfixer'
+    public readonly configName = 'phpcsfixer.php'
     public readonly executable = 'vendor/bin/php-cs-fixer'
     public readonly installCommand = 'composer global require friendsofphp/php-cs-fixer'
 
