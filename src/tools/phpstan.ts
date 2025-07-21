@@ -1,5 +1,6 @@
 import { PHPRefactorConfig } from '../phprefactor'
-import { RefactorTool } from './refactor_tool'
+import { realpath } from '../util'
+import { RefactorTool, Result } from './refactor_tool'
 
 export class PHPStan implements RefactorTool {
     public readonly name = 'PHPStan'
@@ -9,7 +10,7 @@ export class PHPStan implements RefactorTool {
     private readonly defaultInstallCommand = 'composer global require phpstan/phpstan'
     private readonly laravelInstallCommand = 'composer global require "larastan/larastan:^3.0"'
 
-    constructor(private readonly config: PHPRefactorConfig) {
+    constructor(private readonly config: PHPRefactorConfig, private readonly rootPath: string | undefined) {
         //
     }
 
@@ -68,12 +69,22 @@ treatPhpDocTypesAsCertain: false
     }
 
     getCommandArgs(target: string, configPath: string): string[] {
-        const args = ['analyse', '--fix', '--configuration', configPath, target]
+        const args = ['analyse', target, '--fix', '--configuration', configPath, '--no-progress']
+
+        const autoloader = this.config.autoloadFile
+        if (autoloader) {
+            args.push('--autoload-file', realpath(autoloader, this.rootPath || ''))
+        }
 
         return args
     }
 
     supportsDryRun(): boolean {
         return false
+    }
+
+    // ignore error as PHPStan returns an error if nothing could be fixed
+    mapResult(): Result<boolean> {
+        return { value: true, error: null }
     }
 }

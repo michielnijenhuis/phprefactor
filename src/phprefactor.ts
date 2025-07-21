@@ -4,7 +4,7 @@ import * as path from 'path'
 import { promisify } from 'util'
 import * as vscode from 'vscode'
 import { RefactorTool } from './tools/refactor_tool'
-import { formatNames } from './util'
+import { formatNames, realpath } from './util'
 
 const execAsync = promisify(exec)
 
@@ -47,7 +47,7 @@ export interface PHPRefactorConfig {
     phpstan: PHPStanConfig
 }
 
-type RefactorToolConstructor = new (config: PHPRefactorConfig) => RefactorTool
+type RefactorToolConstructor = new (config: PHPRefactorConfig, root: string | undefined) => RefactorTool
 
 export class PHPRefactorManager {
     public static tools: RefactorToolConstructor[] = []
@@ -64,7 +64,7 @@ export class PHPRefactorManager {
         this.config = this.loadConfig()
 
         this.tools = PHPRefactorManager.tools.reduce((acc, tool) => {
-            const instance = new tool(this.config)
+            const instance = new tool(this.config, this.rootPath)
             acc[instance.key] = instance
 
             return acc
@@ -115,7 +115,7 @@ export class PHPRefactorManager {
         return this.config.runOnSave
     }
 
-    private get rootPath() {
+    public get rootPath() {
         return vscode.workspace.workspaceFolders?.[0].uri.fsPath
     }
 
@@ -137,84 +137,75 @@ export class PHPRefactorManager {
                 cancellable: true,
             }
 
-            if (this.config.showProgressNotification) {
-                return await vscode.window.withProgress(progressOptions, async (progress, token) => {
-                    return new Promise<boolean>((resolve, reject) => {
-                        const process = spawn(executable, args, {
-                            cwd: this.rootPath,
-                        })
-
-                        let output = ''
-                        let errorOutput = ''
-
-                        process.stdout.on('data', (data) => {
-                            const chunk = data.toString()
-                            output += chunk
-                            this.outputChannel.append(chunk)
-                        })
-
-                        process.stderr.on('data', (data) => {
-                            const chunk = data.toString()
-                            errorOutput += chunk
-                            this.outputChannel.append(chunk)
-                        })
-
-                        process.on('close', (code) => {
-                            if (code === 0) {
-                                this.outputChannel.appendLine(`\n✅ ${name} completed successfully!`)
-
-                                resolve(true)
-                            } else {
-                                this.outputChannel.appendLine(`\n❌ ${name} failed with exit code: ${code}`)
-                                reject(new Error(`${name} failed with exit code: ${code}`))
-                            }
-                        })
-
-                        process.on('error', (error) => {
-                            this.outputChannel.appendLine(`\n❌ Error running ${name}: ${error.message}`)
-                            reject(error)
-                        })
-
-                        token.onCancellationRequested(() => {
-                            process.kill()
-                            reject(new Error(`${name} execution was cancelled`))
-                        })
-                    })
-                })
-            } else {
-                return await new Promise<boolean>((resolve, reject) => {
-                    const process = spawn(executable, args, {
-                        cwd: this.rootPath,
-                    })
-
-                    process.stdout.on('data', (data) => {
-                        this.outputChannel.append(data.toString())
-                    })
-
-                    process.stderr.on('data', (data) => {
-                        this.outputChannel.append(data.toString())
-                    })
-
-                    process.on('close', (code) => {
-                        if (code === 0) {
-                            this.outputChannel.appendLine(`\n✅ ${name} completed successfully!`)
-                            resolve(true)
-                        } else {
-                            this.outputChannel.appendLine(`\n❌ ${name} failed with exit code: ${code}`)
-                            reject(new Error(`${name} failed with exit code: ${code}`))
-                        }
-                    })
-
-                    process.on('error', (error) => {
-                        reject(error)
-                    })
-                })
+            if (!this.config.showProgressNotification) {
+                return await this.doRunCommand(tool, executable, args)
             }
+
+            return await vscode.window.withProgress(progressOptions, async (_progress, token) => {
+                return this.doRunCommand(tool, executable, args, token)
+            })
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error'
             this.outputChannel.appendLine(`\n❌ Error: ${message}`)
+
             throw error
         }
+    }
+
+    private async doRunCommand(
+        tool: RefactorTool,
+        executable: string,
+        args: string[],
+        token?: vscode.CancellationToken,
+    ): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            const name = tool.name
+
+            const process = spawn(executable, args, {
+                cwd: this.rootPath,
+            })
+
+            process.stdout.on('data', (data) => {
+                this.outputChannel.append(data.toString())
+            })
+
+            process.stderr.on('data', (data) => {
+                this.outputChannel.append(data.toString())
+            })
+
+            process.on('close', (code) => {
+                const result = tool.mapResult(code, null)
+                let icon: string
+
+                if (!result.value) {
+                    reject(result.error || new Error('Unknown error'))
+                    icon = '❌'
+                } else {
+                    resolve(result.value)
+                    icon = '✅'
+                }
+
+                if (code !== null) {
+                    this.outputChannel.appendLine(`\n${icon} ${name} exited with code: ${code}`)
+                }
+            })
+
+            process.on('error', (error) => {
+                const result = tool.mapResult(null, error)
+
+                if (!result.value) {
+                    this.outputChannel.appendLine(`\n❌ Error running ${name}: ${error.message}`)
+                    reject(result.error)
+                } else {
+                    resolve(result.value)
+                }
+            })
+
+            token?.onCancellationRequested(() => {
+                process.kill()
+                reject(new Error(`${name} execution was cancelled`))
+            })
+        })
     }
 
     async checkInstallation(tool: RefactorTool): Promise<boolean> {
@@ -324,9 +315,9 @@ export class PHPRefactorManager {
         let mayThrow = true
         if (!this.config[key].executablePath || this.config[key].executablePath === `vendor/bin/${name}`) {
             mayThrow = false
-            this.config[key].executablePath = this.realpath(`vendor/bin/${name}`)
+            this.config[key].executablePath = realpath(`vendor/bin/${name}`, this.rootPath)
         } else {
-            this.config[key].executablePath = this.realpath(this.config[key].executablePath)
+            this.config[key].executablePath = realpath(this.config[key].executablePath, this.rootPath)
         }
 
         if (fs.existsSync(this.config[key].executablePath)) {
@@ -361,7 +352,10 @@ export class PHPRefactorManager {
     }
 
     private async getConfigPath(tool: RefactorTool): Promise<string> {
-        if (this.config[tool.key].configPath && fs.existsSync(this.realpath(this.config[tool.key].configPath))) {
+        if (
+            this.config[tool.key].configPath &&
+            fs.existsSync(realpath(this.config[tool.key].configPath, this.rootPath))
+        ) {
             return this.config[tool.key].configPath
         }
 
@@ -376,13 +370,5 @@ export class PHPRefactorManager {
         }
 
         return await this.generateConfigFile(tool)
-    }
-
-    private realpath(p: string, relative = true): string {
-        if (!relative) {
-            return path.resolve(p)
-        }
-
-        return path.resolve(this.rootPath ?? '.', p)
     }
 }

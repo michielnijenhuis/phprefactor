@@ -1,6 +1,8 @@
 import { RefactorToolKey } from '../phprefactor'
 
-export interface RefactorTool {
+export type Result<T = any> = { value: T; error: null } | { value: null; error: Error }
+
+export interface RefactorTool<T = boolean> {
     readonly name: string
     readonly key: RefactorToolKey
     readonly configName: string
@@ -9,4 +11,5 @@ export interface RefactorTool {
     generateConfig(): string
     getCommandArgs(target: string, configPath: string, dryRun: boolean): string[]
     supportsDryRun(): boolean
+    mapResult(code: number | null, error: Error | null): Result<T>
 }

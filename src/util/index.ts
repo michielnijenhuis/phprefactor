@@ -1,3 +1,4 @@
+import path from 'path'
 import { RefactorTool } from '../tools/refactor_tool'
 
 export function castError(error: any): string {
@@ -19,4 +20,12 @@ export function formatNames(tools: RefactorTool[]): string {
     }
 
     return name
+}
+
+export function realpath(p: string, root?: string): string {
+    if (arguments.length === 1) {
+        return path.resolve(p)
+    }
+
+    return path.resolve(root ?? '.', p)
 }

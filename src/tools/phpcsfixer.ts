@@ -1,5 +1,5 @@
 import { PHPRefactorConfig } from '../phprefactor'
-import { RefactorTool } from './refactor_tool'
+import { RefactorTool, Result } from './refactor_tool'
 
 export class PhpCsFixer implements RefactorTool {
     public readonly name = 'PHPCSFixer'
@@ -57,6 +57,7 @@ return (new PhpCsFixer\\Config())
         'global_namespace_import' => [
             'import_classes' => true,
         ],
+        'no_null_property_initialization' => false,
     ])
     ->setIndent('    ')
     ->setRiskyAllowed(true)
@@ -85,5 +86,13 @@ return (new PhpCsFixer\\Config())
 
     supportsDryRun(): boolean {
         return true
+    }
+
+    mapResult(code: number | null, error: Error | null): Result<boolean> {
+        if (error) {
+            return { value: null, error }
+        }
+
+        return { value: code === 0, error: null }
     }
 }
