@@ -4,11 +4,12 @@ import { runOnDirectory } from './commands/run_on_directory'
 import { runOnFile } from './commands/run_on_file'
 import { PHPRefactorManager } from './phprefactor'
 import { PhpCsFixer } from './tools/phpcsfixer'
+import { PHPStan } from './tools/phpstan'
 import { Rector } from './tools/rector'
 import { castError, formatNames } from './util'
 
 export function activate(context: vscode.ExtensionContext) {
-    PHPRefactorManager.tools = [PhpCsFixer, Rector]
+    PHPRefactorManager.tools = [PHPStan, Rector, PhpCsFixer]
 
     const manager = PHPRefactorManager.getInstance()
 
@@ -37,29 +38,27 @@ export function activate(context: vscode.ExtensionContext) {
             const failedTools = tools.filter((_, i) => results[i].status === 'rejected')
             vscode.window.showErrorMessage(`${formatNames(failedTools)} not installed successfully.`)
         },
+        generateMissingConfigFiles: async function () {
+            const results = await Promise.allSettled(
+                manager.orderedTools.map((tool) => manager.generateConfigFromSettings(tool)),
+            )
+            const errors = results.map((result) => (result.status === 'fulfilled' ? null : castError(result.reason)))
+            const success = errors.filter(Boolean).length === 0
+
+            if (success) {
+                if (manager.notifyOnResult) {
+                    vscode.window.showInformationMessage('All missing configs generated successfully.')
+                }
+
+                return
+            }
+
+            const failedTools = manager.orderedTools.filter((_, i) => errors[i])
+            vscode.window.showErrorMessage(`${formatNames(failedTools)} config not generated successfully.`)
+        },
     }
 
     for (const tool of manager.orderedTools) {
-        commands[`run${tool.name}onFile`] = async function (uri?: vscode.Uri) {
-            await runOnFile(uri, false, [tool])
-        }
-
-        commands[`run${tool.name}onDirectory`] = async function (uri?: vscode.Uri) {
-            await runOnDirectory(uri, false, [tool])
-        }
-
-        commands[`generate${tool.name}Config`] = async function () {
-            try {
-                await manager.generateConfigFromSettings(tool)
-
-                if (manager.notifyOnResult) {
-                    vscode.window.showInformationMessage(`${tool.name} config generated successfully.`)
-                }
-            } catch (error) {
-                vscode.window.showErrorMessage(`Error generating ${tool.name} config:\n${castError(error)}`)
-            }
-        }
-
         commands[`install${tool.name}`] = async function () {
             try {
                 await manager.install(tool)

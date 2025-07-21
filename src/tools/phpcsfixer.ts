@@ -1,17 +1,15 @@
 import { PHPRefactorConfig } from '../phprefactor'
 import { RefactorTool } from './refactor_tool'
 
-export class PhpCsFixer extends RefactorTool {
-    constructor(private readonly config: PHPRefactorConfig) {
-        super(
-            'PHPCSFixer',
-            'phpcsfixer',
-            'vendor/bin/php-cs-fixer',
-            'composer global require friendsofphp/php-cs-fixer',
-        )
-    }
+export class PhpCsFixer implements RefactorTool {
+    public readonly name = 'PHPCSFixer'
+    public readonly key = 'phpcsfixer'
+    public readonly executable = 'vendor/bin/php-cs-fixer'
+    public readonly installCommand = 'composer global require friendsofphp/php-cs-fixer'
 
-    async generateConfig(): Promise<string> {
+    constructor(private readonly config: PHPRefactorConfig) {}
+
+    generateConfig(): string {
         return `<?php
 
 $finder = (new PhpCsFixer\\Finder())
@@ -82,5 +80,9 @@ return (new PhpCsFixer\\Config())
         }
 
         return args
+    }
+
+    supportsDryRun(): boolean {
+        return true
     }
 }

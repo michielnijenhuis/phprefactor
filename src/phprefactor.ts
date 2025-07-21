@@ -10,9 +10,10 @@ const execAsync = promisify(exec)
 
 type PHPVersion = '7.2' | '7.3' | '7.4' | '8.0' | '8.1' | '8.2' | '8.3'
 
-export type RefactorToolKey = 'rector' | 'phpcsfixer'
+export type RefactorToolKey = 'rector' | 'phpcsfixer' | 'phpstan'
 
 interface RefactorToolConfig {
+    enabled: boolean
     priority: number
     executablePath: string
     configPath: string
@@ -26,6 +27,10 @@ interface PHPCSFixerConfig extends RefactorToolConfig {
     //
 }
 
+interface PHPStanConfig extends RefactorToolConfig {
+    laravel: boolean
+}
+
 export interface PHPRefactorConfig {
     phpVersion?: PHPVersion
     runOnSave: boolean
@@ -35,8 +40,11 @@ export interface PHPRefactorConfig {
     notifyOnResult: boolean
     showProgressNotification: boolean
     openDiffAfterRun: boolean
+
+    // tools
     rector: RectorConfig
     phpcsfixer: PHPCSFixerConfig
+    phpstan: PHPStanConfig
 }
 
 type RefactorToolConstructor = new (config: PHPRefactorConfig) => RefactorTool
@@ -46,6 +54,7 @@ export class PHPRefactorManager {
     private static instance?: PHPRefactorManager
 
     public readonly tools: Record<RefactorToolKey, RefactorTool>
+    private readonly _orderedTools: RefactorTool[]
 
     private config: PHPRefactorConfig
     private outputChannel: vscode.OutputChannel
@@ -60,6 +69,10 @@ export class PHPRefactorManager {
 
             return acc
         }, {} as Record<RefactorToolKey, RefactorTool>)
+
+        this._orderedTools = Object.values(this.tools).sort(
+            (a, b) => this.config[b.key].priority - this.config[a.key].priority,
+        )
     }
 
     public static getInstance(): PHPRefactorManager {
@@ -78,8 +91,12 @@ export class PHPRefactorManager {
         return this.tools.phpcsfixer
     }
 
+    public get phpstan(): RefactorTool {
+        return this.tools.phpstan
+    }
+
     public get orderedTools(): RefactorTool[] {
-        return Object.values(this.tools).sort((a, b) => this.config[a.key].priority - this.config[b.key].priority)
+        return this._orderedTools.filter((tool) => this.config[tool.key].enabled)
     }
 
     public get formattedNames(): string {
@@ -275,14 +292,23 @@ export class PHPRefactorManager {
 
         return {
             rector: {
+                enabled: config.get('rector.enabled', true),
                 executablePath: config.get('rector.executablePath', 'vendor/bin/rector'),
                 configPath: config.get('rector.configPath', ''),
                 priority: config.get('rector.priority', 20),
             },
             phpcsfixer: {
+                enabled: config.get('phpcsfixer.enabled', true),
                 executablePath: config.get('phpcsfixer.executablePath', 'vendor/bin/php-cs-fixer'),
                 configPath: config.get('phpcsfixer.configPath', ''),
                 priority: config.get('phpcsfixer.priority', 10),
+            },
+            phpstan: {
+                enabled: config.get('phpstan.enabled', true),
+                executablePath: config.get('phpstan.executablePath', 'vendor/bin/phpstan'),
+                configPath: config.get('phpstan.configPath', ''),
+                priority: config.get('phpstan.priority', 30),
+                laravel: config.get('phpstan.laravel', false),
             },
             paths: config.get('paths', ['__DIR__']),
             skip: config.get('skip', ['vendor']),
@@ -333,7 +359,7 @@ export class PHPRefactorManager {
             return configPath
         }
 
-        fs.writeFileSync(configPath, await tool.generateConfig())
+        fs.writeFileSync(configPath, tool.generateConfig())
 
         return configPath
     }

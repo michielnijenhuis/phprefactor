@@ -7,7 +7,7 @@
         "email": "michiel.nijenhuis@gmail.com"
     },
     "description": "Progressive PHP refactoring with Rector and PHPCSFixer - run on files or directories with intelligent configuration management",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "icon": "assets/php.png",
     "repository": {
         "type": "git",
@@ -49,16 +49,6 @@
                 "category": "phprefactor"
             },
             {
-                "command": "phprefactor.runPHPCSFixerOnFile",
-                "title": "Refactor Current File (PHPCSFixer Only)",
-                "category": "phprefactor"
-            },
-            {
-                "command": "phprefactor.runRectorOnFile",
-                "title": "Refactor Current File (Rector Only)",
-                "category": "phprefactor"
-            },
-            {
                 "command": "phprefactor.dryRunOnFile",
                 "title": "Dry Run Refactor Current File",
                 "category": "phprefactor"
@@ -69,28 +59,8 @@
                 "category": "phprefactor"
             },
             {
-                "command": "phprefactor.runPHPCSFixerOnDirectory",
-                "title": "Refactor Directory (PHPCSFixer Only)",
-                "category": "phprefactor"
-            },
-            {
-                "command": "phprefactor.runRectorOnDirectory",
-                "title": "Refactor Directory (Rector Only)",
-                "category": "phprefactor"
-            },
-            {
                 "command": "phprefactor.dryRunOnDirectory",
                 "title": "Dry Run Refactor Directory",
-                "category": "phprefactor"
-            },
-            {
-                "command": "phprefactor.generateRectorConfig",
-                "title": "Generate Rector Config",
-                "category": "phprefactor"
-            },
-            {
-                "command": "phprefactor.generatePHPCSFixerConfig",
-                "title": "Generate PHPCSFixer Config",
                 "category": "phprefactor"
             },
             {
@@ -104,8 +74,18 @@
                 "category": "phprefactor"
             },
             {
+                "command": "phprefactor.installPHPStan",
+                "title": "Install PHPStan Globally",
+                "category": "phprefactor"
+            },
+            {
+                "command": "phprefactor.generateMissingConfigFiles",
+                "title": "Generate Missing Config Files",
+                "category": "phprefactor"
+            },
+            {
                 "command": "phprefactor.checkInstallation",
-                "title": "Check Rector and PHPCSFixer Installation",
+                "title": "Check Installation For All Supported Tools",
                 "category": "phprefactor"
             }
         ],
@@ -118,16 +98,6 @@
                 },
                 {
                     "when": "resourceExtname == .php",
-                    "command": "phprefactor.runPHPCSFixerOnFile",
-                    "group": "phprefactor@2"
-                },
-                {
-                    "when": "resourceExtname == .php",
-                    "command": "phprefactor.runRectorOnFile",
-                    "group": "phprefactor@3"
-                },
-                {
-                    "when": "resourceExtname == .php",
                     "command": "phprefactor.dryRunOnFile",
                     "group": "phprefactor@4"
                 },
@@ -135,16 +105,6 @@
                     "when": "explorerResourceIsFolder",
                     "command": "phprefactor.runOnDirectory",
                     "group": "phprefactor@5"
-                },
-                {
-                    "when": "explorerResourceIsFolder",
-                    "command": "phprefactor.runPHPCSFixerOnDirectory",
-                    "group": "phprefactor@6"
-                },
-                {
-                    "when": "explorerResourceIsFolder",
-                    "command": "phprefactor.runRectorOnDirectory",
-                    "group": "phprefactor@7"
                 },
                 {
                     "when": "explorerResourceIsFolder",
@@ -160,16 +120,6 @@
                 },
                 {
                     "when": "resourceExtname == .php",
-                    "command": "phprefactor.runPHPCSFixerOnFile",
-                    "group": "phprefactor@2"
-                },
-                {
-                    "when": "resourceExtname == .php",
-                    "command": "phprefactor.runRectorOnFile",
-                    "group": "phprefactor@3"
-                },
-                {
-                    "when": "resourceExtname == .php",
                     "command": "phprefactor.dryRunOnFile",
                     "group": "phprefactor@2"
                 }
@@ -177,14 +127,6 @@
             "commandPalette": [
                 {
                     "command": "phprefactor.runOnFile",
-                    "when": "editorLangId == php"
-                },
-                {
-                    "command": "phprefactor.runPHPCSFixerOnFile",
-                    "when": "editorLangId == php"
-                },
-                {
-                    "command": "phprefactor.runRectorOnFile",
                     "when": "editorLangId == php"
                 },
                 {
@@ -255,6 +197,11 @@
                     "default": false,
                     "description": "Automatically open diff view after running PHPCSFixer and Rector"
                 },
+                "phprefactor.rector.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable PHPStan tool."
+                },
                 "phprefactor.rector.executablePath": {
                     "type": "string",
                     "default": "vendor/bin/rector",
@@ -268,7 +215,12 @@
                 "phprefactor.rector.priority": {
                     "type": "integer",
                     "default": 20,
-                    "description": "Priority of Rector tool. Lower numbers run first."
+                    "description": "Priority of Rector tool. Higher numbers run first."
+                },
+                "phprefactor.phpcsfixer.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable PHPCSFixer tool."
                 },
                 "phprefactor.phpcsfixer.executablePath": {
                     "type": "string",
@@ -283,7 +235,32 @@
                 "phprefactor.phpcsfixer.priority": {
                     "type": "integer",
                     "default": 10,
-                    "description": "Priority of PHPCSFixer tool. Lower numbers run first."
+                    "description": "Priority of PHPCSFixer tool. Higher numbers run first."
+                },
+                "phprefactor.phpstan.executablePath": {
+                    "type": "string",
+                    "default": "vendor/bin/phpstan",
+                    "description": "Path to PHPStan executable. Leave empty to use global installation."
+                },
+                "phprefactor.phpstan.configPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to custom PHPStan config file. Leave empty to auto-generate from settings."
+                },
+                "phprefactor.phpstan.priority": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Priority of PHPStan tool. Higher numbers run first."
+                },
+                "phprefactor.phpstan.laravel": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Use Larastan to run PHPStan."
+                },
+                "phprefactor.phpstan.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable PHPStan tool."
                 }
             }
         }

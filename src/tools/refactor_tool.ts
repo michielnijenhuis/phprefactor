@@ -1,14 +1,11 @@
 import { RefactorToolKey } from '../phprefactor'
 
-export abstract class RefactorTool {
-    constructor(
-        public readonly name: string,
-        public readonly key: RefactorToolKey,
-        public readonly executable: string,
-        public readonly installCommand: string,
-    ) {}
-
-    abstract generateConfig(): Promise<string>
-
-    abstract getCommandArgs(target: string, configPath: string, dryRun: boolean): string[]
+export interface RefactorTool {
+    readonly name: string
+    readonly key: RefactorToolKey
+    readonly executable: string
+    readonly installCommand: string
+    generateConfig(): string
+    getCommandArgs(target: string, configPath: string, dryRun: boolean): string[]
+    supportsDryRun(): boolean
 }

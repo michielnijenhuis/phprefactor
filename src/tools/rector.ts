@@ -1,12 +1,17 @@
 import { PHPRefactorConfig } from '../phprefactor'
 import { RefactorTool } from './refactor_tool'
 
-export class Rector extends RefactorTool {
+export class Rector implements RefactorTool {
+    public readonly name = 'Rector'
+    public readonly key = 'rector'
+    public readonly executable = 'vendor/bin/rector'
+    public readonly installCommand = 'composer global require rector/rector'
+
     constructor(private readonly config: PHPRefactorConfig) {
-        super('Rector', 'rector', 'vendor/bin/rector', 'composer global require rector/rector')
+        //
     }
 
-    async generateConfig(): Promise<string> {
+    generateConfig(): string {
         let phpSet = ''
         if (this.config.phpVersion) {
             const version = this.config.phpVersion.replace('.', '')
@@ -57,5 +62,9 @@ return $config;
         }
 
         return args
+    }
+
+    supportsDryRun(): boolean {
+        return true
     }
 }

@@ -10,6 +10,10 @@ export async function runCommand(target: string, dryRun = false, tools?: Refacto
         tools = manager.orderedTools
     }
 
+    if (dryRun) {
+        tools = tools.filter((tool) => tool.supportsDryRun())
+    }
+
     try {
         const results = await Promise.allSettled(tools.map((tool) => manager.runCommand(tool, target, dryRun)))
         const errors = results.map((result) => (result.status === 'fulfilled' ? null : castError(result.reason)))
