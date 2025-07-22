@@ -35,13 +35,13 @@ export class PHPStan implements RefactorTool {
 
 parameters:
 
-paths:
-    - app/
+    paths:
+        - app/
 
-# Level 10 is the highest level
-level: 8
+    # Level 10 is the highest level
+    level: 8
 
-treatPhpDocTypesAsCertain: false
+    treatPhpDocTypesAsCertain: false
 
 #    ignoreErrors:
 #        - '#PHPDoc tag @var#'
@@ -53,13 +53,13 @@ treatPhpDocTypesAsCertain: false
 
         return `parameters:
 
-paths:
-    - src/
+    paths:
+        - src/
 
-# Level 10 is the highest level
-level: 6
+    # Level 10 is the highest level
+    level: 6
 
-treatPhpDocTypesAsCertain: false
+    treatPhpDocTypesAsCertain: false
 
 #    ignoreErrors:
 #        - '#PHPDoc tag @var#'

@@ -7,7 +7,7 @@
         "email": "michiel.nijenhuis@gmail.com"
     },
     "description": "Progressive PHP refactoring with Rector and PHPCSFixer - run on files or directories with intelligent configuration management",
-    "version": "1.7.4",
+    "version": "1.7.5",
     "icon": "assets/php.png",
     "repository": {
         "type": "git",

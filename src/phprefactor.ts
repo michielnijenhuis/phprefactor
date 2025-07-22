@@ -119,37 +119,30 @@ export class PHPRefactorManager {
         return vscode.workspace.workspaceFolders?.[0].uri.fsPath
     }
 
-    public async runCommand(tool: RefactorTool, target: string, dryRun: boolean = false): Promise<boolean> {
-        try {
-            const executable = await this.getExecutable(tool)
-            const configPath = await this.getConfigPath(tool)
-            const name = tool.name
-            const args = tool.getCommandArgs(target, configPath, dryRun)
+    public async runCommand(tool: RefactorTool, target: string, dryRun: boolean = false): Promise<void> {
+        const executable = await this.getExecutable(tool)
+        const configPath = await this.getConfigPath(tool)
+        const name = tool.name
+        const args = tool.getCommandArgs(target, configPath, dryRun)
 
-            this.outputChannel.appendLine(`Running ${name} on: ${target}`)
-            this.outputChannel.appendLine(`Config: ${configPath}`)
-            this.outputChannel.appendLine(`Command: ${executable} ${args.join(' ')}`)
-            this.outputChannel.appendLine('')
+        this.outputChannel.appendLine(`Running ${name} on: ${target}`)
+        this.outputChannel.appendLine(`Config: ${configPath}`)
+        this.outputChannel.appendLine(`Command: ${executable} ${args.join(' ')}`)
+        this.outputChannel.appendLine('')
 
-            const progressOptions = {
-                location: vscode.ProgressLocation.Notification,
-                title: dryRun ? `Running ${name} (Dry Run)` : `Running ${name}`,
-                cancellable: true,
-            }
-
-            if (!this.config.showProgressNotification) {
-                return await this.doRunCommand(tool, executable, args)
-            }
-
-            return await vscode.window.withProgress(progressOptions, async (_progress, token) => {
-                return this.doRunCommand(tool, executable, args, token)
-            })
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error'
-            this.outputChannel.appendLine(`\n❌ Error: ${message}`)
-
-            throw error
+        const progressOptions = {
+            location: vscode.ProgressLocation.Notification,
+            title: dryRun ? `Running ${name} (Dry Run)` : `Running ${name}`,
+            cancellable: true,
         }
+
+        if (!this.config.showProgressNotification) {
+            return await this.doRunCommand(tool, executable, args)
+        }
+
+        return await vscode.window.withProgress(progressOptions, async (_progress, token) => {
+            return this.doRunCommand(tool, executable, args, token)
+        })
     }
 
     private async doRunCommand(
@@ -157,8 +150,8 @@ export class PHPRefactorManager {
         executable: string,
         args: string[],
         token?: vscode.CancellationToken,
-    ): Promise<boolean> {
-        return new Promise<boolean>((resolve, reject) => {
+    ): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
             const name = tool.name
 
             const process = spawn(executable, args, {
@@ -181,7 +174,7 @@ export class PHPRefactorManager {
                     reject(result.error || new Error('Unknown error'))
                     icon = '❌'
                 } else {
-                    resolve(result.value)
+                    resolve()
                     icon = '✅'
                 }
 
@@ -197,7 +190,7 @@ export class PHPRefactorManager {
                     this.outputChannel.appendLine(`\n❌ Error running ${name}: ${error.message}`)
                     reject(result.error)
                 } else {
-                    resolve(result.value)
+                    resolve()
                 }
             })
 
@@ -208,66 +201,42 @@ export class PHPRefactorManager {
         })
     }
 
-    async checkInstallation(tool: RefactorTool): Promise<boolean> {
-        try {
-            const executable = await this.getExecutable(tool)
-            const { stdout } = await execAsync(`${executable} --version`)
+    async checkInstallation(tool: RefactorTool): Promise<void> {
+        const executable = await this.getExecutable(tool)
+        const { stdout } = await execAsync(`${executable} --version`)
 
-            this.outputChannel.appendLine(`${tool.name} Installation Check`)
-            this.outputChannel.appendLine('========================')
-            this.outputChannel.appendLine(`Executable: ${executable}`)
-            this.outputChannel.appendLine(`Version: ${stdout.trim()}`)
-
-            return true
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error'
-            this.outputChannel.appendLine(`❌ ${message}`)
-            return false
-        }
+        this.outputChannel.appendLine(`${tool.name} Installation Check`)
+        this.outputChannel.appendLine('========================')
+        this.outputChannel.appendLine(`Executable: ${executable}`)
+        this.outputChannel.appendLine(`Version: ${stdout.trim()}`)
     }
 
-    async install(tool: RefactorTool): Promise<boolean> {
-        try {
-            this.outputChannel.appendLine(`Installing ${tool.name} globally...`)
+    async install(tool: RefactorTool): Promise<void> {
+        this.outputChannel.appendLine(`Installing ${tool.name} globally...`)
 
-            await vscode.window.withProgress(
-                {
-                    location: vscode.ProgressLocation.Notification,
-                    title: `Installing ${tool.name}`,
-                    cancellable: false,
-                },
-                async () => {
-                    const { stdout, stderr } = await execAsync(tool.installCommand)
-                    this.outputChannel.appendLine(stdout)
-                    if (stderr) {
-                        this.outputChannel.appendLine('STDERR:')
-                        this.outputChannel.appendLine(stderr)
-                    }
-                },
-            )
-
-            this.outputChannel.appendLine(`✅ ${tool.name} installed successfully!`)
-            return true
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error'
-            this.outputChannel.appendLine(`❌ Installation failed: ${message}`)
-            return false
-        }
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: `Installing ${tool.name}`,
+                cancellable: false,
+            },
+            async () => {
+                const { stdout, stderr } = await execAsync(tool.installCommand)
+                this.outputChannel.appendLine(stdout)
+                if (stderr) {
+                    this.outputChannel.appendLine('STDERR:')
+                    this.outputChannel.appendLine(stderr)
+                }
+            },
+        )
     }
 
-    async generateConfigFromSettings(tool: RefactorTool): Promise<boolean> {
-        try {
-            const configPath: string = await this.generateConfigFile(tool)
-            this.outputChannel.appendLine(`Generated ${tool.name} config at: ${configPath}`)
+    async generateConfigFromSettings(tool: RefactorTool): Promise<void> {
+        const configPath: string = await this.generateConfigFile(tool)
+        this.outputChannel.appendLine(`Generated ${tool.name} config at: ${configPath}`)
 
-            const doc = await vscode.workspace.openTextDocument(configPath)
-            await vscode.window.showTextDocument(doc)
-
-            return true
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error'
-            return false
-        }
+        const doc = await vscode.workspace.openTextDocument(configPath)
+        await vscode.window.showTextDocument(doc)
     }
 
     public refreshConfig(): void {

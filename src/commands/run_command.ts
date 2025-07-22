@@ -16,7 +16,7 @@ export async function runCommand(target: string, dryRun = false, tools?: Refacto
 
     try {
         const start = performance.now()
-        const results: PromiseSettledResult<boolean>[] = []
+        const results: PromiseSettledResult<void>[] = []
 
         for (const tool of tools) {
             const result = await Promise.allSettled([manager.runCommand(tool, target, dryRun)])

@@ -61,7 +61,6 @@ return (new PhpCsFixer\\Config())
     ])
     ->setIndent('    ')
     ->setRiskyAllowed(false)
-    ->setUnsupportedPhpVersionAllowed(true)
     ->setLineEnding("\\n")
     ->setFinder($finder)
 ;
